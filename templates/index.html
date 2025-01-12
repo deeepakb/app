@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+    
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1f1f1f;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: #e5e5e5;
+            padding: 20px;
+        }
+    
+        #sidebar-left {
+            width: 250px;
+            background-color: #2b2b2b;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            box-shadow: 2px 0px 10px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            overflow-y: auto;
+        }
+    
+        #sidebar-right {
+            width: 250px;
+            background-color: #2b2b2b;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            right: 0;
+            box-shadow: -2px 0px 10px rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            overflow-y: auto;
+        }
+    
+        #token-info {
+            font-size: 0.8rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .message pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-width: 100%;
+            overflow-x: auto;
+        }
+
+        .message code {
+            display: block;
+            background-color: #2b2b2b;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .code-block {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .code-block pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background-color: #2b2b2b;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        
+        pre, code {
+            white-space: pre-wrap;
+            tab-size: 4;
+        }
+
+        .code-block code {
+            font-family: monospace;
+            font-size: 0.9em;
+            display: block;
+            tab-size: 4;
+        }
+        #connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.8rem;
+            z-index: 1000;
+        }
+
+        .connected {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .disconnected {
+            background-color: #f44336;
+            color: white;
+        }
+
+        #chat-container {
+            position: fixed;
+            left: 250px;
+            right: 250px;
+            top: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+    
+        #logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4a90e2;
+            margin-bottom: 20px;
+        }
+    
+        #messages {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid #444;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            background: #1e1e1e;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .message {
+            margin: 10px 0;
+            padding: 12px;
+            border-radius: 8px;
+            max-width: 75%;
+            word-wrap: break-word;
+            opacity: 0;
+            animation: fadeIn 0.3s forwards;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user {
+            background: #4a90e2;
+            color: white;
+            align-self: flex-end;
+        }
+
+        .bot {
+            background: #333333;
+            color: #e5e5e5;
+            align-self: flex-start;
+            display: flex;
+            align-items: center;
+        }
+
+        .bot .spinner {
+            border: 4px solid transparent;
+            border-top: 4px solid #4a90e2;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        .thinking-text {
+            font-size: 0.9rem;
+            display: flex;
+            flex-direction: row;
+        }
+
+        #user-input {
+            width: calc(100% - 20px);
+            padding: 12px;
+            border: 1px solid #555;
+            border-radius: 8px;
+            background: #333333;
+            color: #e5e5e5;
+            margin-bottom: 10px;
+        }
+
+        #user-input:focus {
+            border-color: #4a90e2;
+            outline: none;
+            background: #444;
+        }
+
+        .auth-button {
+            display: block;
+            width: 100%;
+            text-align: center;
+            margin-top: 10px;
+            font-size: 1rem;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes fadeOutUp {
+        from {
+            opacity: 1;
+            transform: translate(-50%, -50%);
+        }
+        to {
+            opacity: 0;
+            transform: translate(-50%, -100%);
+        }
+    }
+
+    #start-message {
+        font-size: 2rem;
+        color: #4a90e2;
+        margin-bottom: 20px;
+        text-align: center;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 100%;
+        transition: opacity 0.5s, transform 0.5s;
+    }
+
+    #start-message.hide {
+        animation: fadeOutUp 0.5s forwards;
+    }
+
+
+    </style>    
+</head>
+<body>
+    <div id="sidebar-left">
+        <h3 style="font-size: 1.2rem; color: #e5e5e5; margin-bottom: 20px;">Conversations</h3>
+    
+                <p style="color: #888; font-size: 0.9rem;">No conversations yet.</p>
+                    </ul>
+    </div>
+    
+    
+    
+    
+    <div id="chat-container">
+        <div id="logo">DeepakGPT</div>
+        {% if 'user' in session %}
+            <div id="messages">
+                <!-- Start message will be inserted here initially -->
+                <div id="start-message"><strong>Hello {{session['username']}}, what would you like to know about Redshift?</strong></div>
+            </div>
+            <div style="display: flex; align-items: center;">
+                <input type="text" id="user-input" placeholder="Type your query here..." autocomplete="off">
+            </div>
+        {% else %}
+            <p>Please log in to access the chatbot.</p>
+            <a href="{{ url_for('login') }}" class="auth-button">Login</a>
+        {% endif %}
+    </div>
+    
+    <div id="sidebar-right">
+        <h3>Token:</h3>
+        <pre id="token-info">
+            {% if 'user' in session %}
+                {% set user_data = session['user'] %}
+                {% if user_data.get('id_token') %}
+                    <strong>ID Token:</strong>
+                    {{ pyjwt.decode(user_data['id_token'], options={"verify_signature": False}) | tojson(indent=2) }}
+                {% endif %}
+                {% if user_data.get('access_token') %}
+                    <strong>Access Token:</strong>
+                    {{ pyjwt.decode(user_data['access_token'], options={"verify_signature": False}) | tojson(indent=2) }}
+                {% endif %}
+            {% else %}
+                No token information available.
+            {% endif %}
+        </pre>
+    </div>
+
+    {% if 'user' in session %}
+<script>
+    const messagesDiv = document.getElementById('messages');
+    const userInput = document.getElementById('user-input');
+    const startMessage = document.getElementById('start-message');
+    const connectionStatus = document.getElementById('connection-status');
+    let isConnected = true;
+
+    // Function to capitalize the first letter of a string
+    function capitalizeFirstLetter(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    // Function to check connection
+    function checkConnection() {
+        fetch('/heartbeat')
+            .then(response => {
+                if (response.ok) {
+                    if (!isConnected) {
+                        isConnected = true;
+                        connectionStatus.textContent = 'Connected';
+                        connectionStatus.className = 'connected';
+                    }
+                } else {
+                    throw new Error('Connection lost');
+                }
+            })
+            .catch(error => {
+                isConnected = false;
+                connectionStatus.textContent = 'Disconnected';
+                connectionStatus.className = 'disconnected';
+                console.error('Connection lost:', error);
+            });
+    }
+
+    // Check connection every 5 seconds
+    setInterval(checkConnection, 5000);
+
+    // Listen for the Enter key press to send the message
+    userInput.addEventListener('keypress', async (event) => {
+        if (event.key === 'Enter') {
+            if (!isConnected) {
+                alert('Connection lost. Please try again when reconnected.');
+                return;
+            }
+
+            let userQuery = userInput.value.trim();
+            if (userQuery === '') return;
+
+            // Remove the start message if it's still visible
+            if (startMessage) {
+                startMessage.classList.add('hide');
+                setTimeout(() => {
+                    startMessage.remove();
+                }, 500);                 
+            }
+
+            // Capitalize the first letter of the message
+            userQuery = capitalizeFirstLetter(userQuery);
+
+            const userMessage = document.createElement('div');
+            userMessage.className = 'message user';
+            userMessage.textContent = userQuery;
+            messagesDiv.appendChild(userMessage);
+
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            userInput.value = '';
+
+            const loadingMessage = document.createElement('div');
+            loadingMessage.className = 'message bot';
+            loadingMessage.innerHTML = '<span class="thinking-text"><div class="spinner"></div> Bot is thinking...</span>';
+            messagesDiv.appendChild(loadingMessage);
+
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            try {
+                const response = await fetch('/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: userQuery })
+                });
+                
+                const data = await response.json();
+
+                loadingMessage.remove();
+
+                const botMessage = document.createElement('div');
+                botMessage.className = 'message bot';
+                botMessage.innerHTML = data.response || 'Sorry, I could not process your request.';
+                messagesDiv.appendChild(botMessage);
+
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            } catch (error) {
+    console.error('Error:', error); // Logs the full error in the console for debugging
+
+    // Remove the loading message
+    loadingMessage.remove();
+
+    // Create a new error message element
+    const errorMessage = document.createElement('div');
+    errorMessage.className = 'message bot';
+
+    // Attempt to provide the full error message or stack trace for detailed information
+    const errorDetails = error.message || error.toString() || 'Unknown error occurred';
+    errorMessage.textContent = `Sorry, an error occurred while processing your request: ${errorDetails}`;
+
+    // Append the error message to the messages container
+    messagesDiv.appendChild(errorMessage);
+
+    // Scroll to the bottom of the messages container
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+}
+        }
+    });
+</script>
+{% endif %}
+
+</body>
+</html>
