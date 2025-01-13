@@ -48,71 +48,25 @@ def get_user_id():
 
 conversation_history_bucket = 'conversation-history-deepak'
 
-def clear_conversation_history(username):
-    try:
-        # Create an empty list to represent a cleared conversation history
-        empty_history = []
-        
-        # Save the empty list to the user's conversation history file in S3
-        s3_client.put_object(
-            Bucket=conversation_history_bucket,
-            Key=f"{username}/conversation_history.json",
-            Body=json.dumps(empty_history),
-            ContentType='application/json'
-        )
-        logger.info(f"Conversation history cleared for user: {username}")
-    except Exception as e:
-        logger.error(f"Error clearing conversation history for user {username}: {e}")
-
-
 def load_conversation_history(username):
     try:
-        s3_object = s3_client.get_object(Bucket=conversation_history_bucket, Key=f"{username}/conversation_history.json")
-        history = json.loads(s3_object['Body'].read().decode('utf-8'))
+        with open("/home/ec2-user/internProject/app/conversation_history.json", 'r') as f:
+            history = json.load(f)
         return history if isinstance(history, list) else []
-    except s3_client.exceptions.NoSuchKey:
-        return []
     except Exception as e:
         logger.error(f"Error loading conversation history: {e}")
         return []
 
 def save_conversation_history(username, history):
     try:
-        s3_client.put_object(
-            Bucket=conversation_history_bucket,
-            Key=f"{username}/conversation_history.json",
-            Body=json.dumps(history, indent=2),
-            ContentType='application/json'
-        )
+        conversation_id = str(uuid.uuid4())
+        timestamp = datetime.utcnow().isoformat()
+        
+        file_path = os.path.join("/home/ec2-user/internProject/app/conversation_history.json", f"/home/ec2-user/internProject/app/conversation_history.json")
+        with open(file_path, 'w') as f:
+            json.dump(history, f, indent=2)
     except Exception as e:
         logger.error(f"Error saving conversation history: {e}")
-
-def append_conversation_history(username, new_messages):
-    try:
-        # Try to load existing history
-        try:
-            existing_history = load_conversation_history(username)
-        except:
-            existing_history = []
-
-        # Append new messages to existing history
-        updated_history = existing_history + new_messages
-
-        # Trim the history if it exceeds a certain length (e.g., 100 messages)
-        max_history_length = 100
-        if len(updated_history) > max_history_length:
-            updated_history = updated_history[-max_history_length:]
-
-        # Save the updated history back to S3
-        s3_client.put_object(
-            Bucket=conversation_history_bucket,
-            Key=f"{username}/conversation_history.json",
-            Body=json.dumps(updated_history, indent=2),
-            ContentType='application/json'
-        )
-        logger.info(f"Conversation history updated for user: {username}")
-    except Exception as e:
-        logger.error(f"Error saving conversation history for user {username}: {e}")
 
 # Recursive RAG function
 def recursive_rag(query, vector_store, conversation_history, iterations=4, original_query=None):
@@ -153,16 +107,17 @@ def recursive_rag(query, vector_store, conversation_history, iterations=4, origi
     full_content = re.sub(r'\n{3,}', '\n\n', full_content).strip()
 
     prompt_info = (
-    "You are a bot designed to assist engineers working on the Amazon Redshift database. Your responses should appear as if you possess all necessary knowledge by default, without referencing or revealing any internal processes, including code snippets.\n\n"
-    "Guidelines:\n"
-    "1. Do not mention or imply the use of code snippets, conversation history, or augmentation in your responses.\n"
-    "2. If the information needed to answer is unavailable, state that you are unable to answer, without referencing the reason.\n"
-    "3. Keep your answers short, precise, and direct. Avoid introductory phrases like 'Based on the code' or 'From the query'.\n"
-    "4. Use conversation history to maintain context and iteratively improve code if possible. If no improvements are needed, return the previous iteration without commenting on it.\n\n"
-    "Always maintain a professional and concise tone."
-)
+    "You are a bot primarily aimed at helping engineers working on the Amazon Redshift database due to its large size (1.5GB).\n"
+    "You are being augmented with code snippets from the Redshift codebase, however, do NOT reference the fact you have been augmented with snippets in your responses. The user does not know you are being given code snippets. Respond as if you have all the knowledge by default.\n"
+    "If you believe the code snippets that you need to answer were not supplied, simply state you're unable to answer the question. Don't reference the fact that the code snippets aren't relevant. NEVER MENTION THE CODE SNIPPETS.\n"
+    "Keep your answer short and precise. NEVER MENTION THE CODE SNIPPETS.\n"
+    "Conversation history is added for context; improve code iteratively if possible. If no improvements are possible, just straight up return the previous iteration with no change and dont mention no improvements are needed, just return it. NEVER MENTION THE CODE SNIPPETS. "
+    "Use the conversation history to understand the context and answer based on that. NEVER MENTION THE CODE SNIPPETS.\n"
+    "Provide direct answers to the user's queries. Avoid introductory phrases like 'Based on the code...' or 'Based on the query...' NEVER MENTION THE CODE SNIPPETS."
+    )
 
-
+    # Remove previous iterations for the current query, keeping only the last one
+    #logger.info(pyjwt.decode(session['user'].get('id_token'))['sub'])
     messages = conversation_history + [
         {
             "role": "user",
@@ -190,25 +145,15 @@ def recursive_rag(query, vector_store, conversation_history, iterations=4, origi
     time.sleep(15)
     response = bedrock.invoke_model(**kwargs)
     response_content = json.loads(response['body'].read())['content'][0]['text']
-
-    # Update conversation history
-    if iterations > 1:
-    # For all iterations except the last, include both original and follow-up queries
-        conversation_history.extend([
+    conversation_history.extend([
         {"role": "user", "content": f"Original query: {original_query}\nFollow-up query: {query}"},
         {"role": "assistant", "content": response_content},
+        #{"time" : datetime.datetime.now()}
     ])
-    else:
-    # For the last iteration, only include the original query
-        conversation_history.extend([
-        {"role": "user", "content": f"Original query: {original_query}"},
-        {"role": "assistant", "content": response_content},
-    ])
-
     
     save_conversation_history(session.get('username'), conversation_history)
     logger.info("\nIteration finished\n")
-    logger.info(f"conversation history is {load_conversation_history(get_user_id())}\n")
+    logger.info(f"conversation history is {conversation_history} \n")
     next_response = recursive_rag(response_content, vector_store, conversation_history, iterations - 1, original_query)
     return next_response if next_response else response_content
 
@@ -218,7 +163,7 @@ embeddings = HuggingFaceEmbeddings(
     model_kwargs={'device': "cpu"},
     encode_kwargs={"batch_size": 131072}
 )
-index_path = "/home/ec2-user/internProject/app/faiss_index_final_improved_3"
+index_path = "/home/ec2-user/internProject/app/faiss_index_final_improved_4"
 vector_store = FAISS.load_local(index_path, embeddings, allow_dangerous_deserialization=True)
 logger.info("FAISS index loaded successfully.")
 
@@ -246,7 +191,6 @@ def home():
     conversation_history = load_conversation_history(username)
     session['previous_conversation_history'] = conversation_history
     logger.info(f"previous conversation histories are {conversation_history} and user id is {username}")
-    clear_conversation_history(username)
     return render_template("index.html", pyjwt=pyjwt)
 
 
@@ -269,7 +213,7 @@ def chat():
 
         user_query = request.json.get("query", "")
         username = session.get('username')
-        
+
         # Load the conversation history
         conversation_history = load_conversation_history(username)
         # Pass the full conversation history to recursive_rag
@@ -280,7 +224,7 @@ def chat():
 
         if len(conversation_history) >= 8:
     # Keep everything except the last 6 messages
-            preserved_history = conversation_history[:-8]
+            preserved_history = conversation_history[:-6]
     # Keep only the last pair (last 2 messages)
             last_pair = conversation_history[-2:]
     # Combine the preserved history with the last pair
@@ -341,6 +285,8 @@ def login():
 
 @app.route('/idpresponse')
 def idp_response():
+    logger.info(f"Full incoming URL: {request.url}")
+    logger.info(f"Query parameters: {request.args}")
 
     code = request.args.get('code')
     if code:
@@ -364,11 +310,13 @@ def idp_response():
             
             if id_token:
                 decoded_id_token = pyjwt.decode(id_token, options={"verify_signature": False})
+                logger.info(f"Decoded ID Token: {decoded_id_token}")
             else:
                 logger.warning("No id_token found in the response")
 
             if access_token:
                 decoded_access_token = pyjwt.decode(access_token, options={"verify_signature": False})
+                logger.info(f"Decoded Access Token: {decoded_access_token}")
             else:
                 logger.warning("No access_token found in the response")
 

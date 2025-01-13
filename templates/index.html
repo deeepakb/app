@@ -305,121 +305,128 @@
     </div>
 
     {% if 'user' in session %}
-<script>
-    const messagesDiv = document.getElementById('messages');
-    const userInput = document.getElementById('user-input');
-    const startMessage = document.getElementById('start-message');
-    const connectionStatus = document.getElementById('connection-status');
-    let isConnected = true;
-
-    // Function to capitalize the first letter of a string
-    function capitalizeFirstLetter(str) {
-        return str.charAt(0).toUpperCase() + str.slice(1);
-    }
-
-    // Function to check connection
-    function checkConnection() {
-        fetch('/heartbeat')
-            .then(response => {
-                if (response.ok) {
-                    if (!isConnected) {
-                        isConnected = true;
-                        connectionStatus.textContent = 'Connected';
-                        connectionStatus.className = 'connected';
-                    }
-                } else {
-                    throw new Error('Connection lost');
-                }
-            })
-            .catch(error => {
-                isConnected = false;
-                connectionStatus.textContent = 'Disconnected';
-                connectionStatus.className = 'disconnected';
-                console.error('Connection lost:', error);
-            });
-    }
-
-    // Check connection every 5 seconds
-    setInterval(checkConnection, 5000);
-
-    // Listen for the Enter key press to send the message
-    userInput.addEventListener('keypress', async (event) => {
-        if (event.key === 'Enter') {
-            if (!isConnected) {
-                alert('Connection lost. Please try again when reconnected.');
-                return;
-            }
-
-            let userQuery = userInput.value.trim();
-            if (userQuery === '') return;
-
-            // Remove the start message if it's still visible
-            if (startMessage) {
-                startMessage.classList.add('hide');
-                setTimeout(() => {
-                    startMessage.remove();
-                }, 500);                 
-            }
-
-            // Capitalize the first letter of the message
-            userQuery = capitalizeFirstLetter(userQuery);
-
-            const userMessage = document.createElement('div');
-            userMessage.className = 'message user';
-            userMessage.textContent = userQuery;
-            messagesDiv.appendChild(userMessage);
-
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-            userInput.value = '';
-
-            const loadingMessage = document.createElement('div');
-            loadingMessage.className = 'message bot';
-            loadingMessage.innerHTML = '<span class="thinking-text"><div class="spinner"></div> Bot is thinking...</span>';
-            messagesDiv.appendChild(loadingMessage);
-
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-            try {
-                const response = await fetch('/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ query: userQuery })
-                });
-                
-                const data = await response.json();
-
-                loadingMessage.remove();
-
-                const botMessage = document.createElement('div');
-                botMessage.className = 'message bot';
-                botMessage.innerHTML = data.response || 'Sorry, I could not process your request.';
-                messagesDiv.appendChild(botMessage);
-
-                messagesDiv.scrollTop = messagesDiv.scrollHeight;
-            } catch (error) {
-    console.error('Error:', error); // Logs the full error in the console for debugging
-
-    // Remove the loading message
-    loadingMessage.remove();
-
-    // Create a new error message element
-    const errorMessage = document.createElement('div');
-    errorMessage.className = 'message bot';
-
-    // Attempt to provide the full error message or stack trace for detailed information
-    const errorDetails = error.message || error.toString() || 'Unknown error occurred';
-    errorMessage.textContent = `Sorry, an error occurred while processing your request: ${errorDetails}`;
-
-    // Append the error message to the messages container
-    messagesDiv.appendChild(errorMessage);
-
-    // Scroll to the bottom of the messages container
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-}
+    <script>
+        const messagesDiv = document.getElementById('messages');
+        const userInput = document.getElementById('user-input');
+        const startMessage = document.getElementById('start-message');
+        const connectionStatus = document.getElementById('connection-status');
+        let isConnected = true;
+        let isBotThinking = false;
+    
+        // Function to capitalize the first letter of a string
+        function capitalizeFirstLetter(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
         }
-    });
-</script>
+    
+        // Function to check connection
+        function checkConnection() {
+            fetch('/heartbeat')
+                .then(response => {
+                    if (response.ok) {
+                        if (!isConnected) {
+                            isConnected = true;
+                            connectionStatus.textContent = 'Connected';
+                            connectionStatus.className = 'connected';
+                        }
+                    } else {
+                        throw new Error('Connection lost');
+                    }
+                })
+                .catch(error => {
+                    isConnected = false;
+                    connectionStatus.textContent = 'Disconnected';
+                    connectionStatus.className = 'disconnected';
+                    console.error('Connection lost:', error);
+                });
+        }
+    
+        // Check connection every 5 seconds
+        setInterval(checkConnection, 5000);
+    
+        // Function to disable/enable the input field
+        function setInputState(disabled) {
+            userInput.disabled = disabled;
+            userInput.style.opacity = disabled ? '0.5' : '1';
+            userInput.placeholder = disabled ? 'Please wait for the bot to finish...' : 'Type your query here...';
+        }
+    
+        // Listen for the Enter key press to send the message
+        userInput.addEventListener('keypress', async (event) => {
+            if (event.key === 'Enter' && !isBotThinking) {
+                if (!isConnected) {
+                    alert('Connection lost. Please try again when reconnected.');
+                    return;
+                }
+    
+                let userQuery = userInput.value.trim();
+                if (userQuery === '') return;
+    
+                // Remove the start message if it's still visible
+                if (startMessage) {
+                    startMessage.classList.add('hide');
+                    setTimeout(() => {
+                        startMessage.remove();
+                    }, 500);                 
+                }
+    
+                // Capitalize the first letter of the message
+                userQuery = capitalizeFirstLetter(userQuery);
+    
+                const userMessage = document.createElement('div');
+                userMessage.className = 'message user';
+                userMessage.textContent = userQuery;
+                messagesDiv.appendChild(userMessage);
+    
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    
+                userInput.value = '';
+    
+                const loadingMessage = document.createElement('div');
+                loadingMessage.className = 'message bot';
+                loadingMessage.innerHTML = '<span class="thinking-text"><div class="spinner"></div> Bot is thinking...</span>';
+                messagesDiv.appendChild(loadingMessage);
+    
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    
+                // Disable input while bot is thinking
+                isBotThinking = true;
+                setInputState(true);
+    
+                try {
+                    const response = await fetch('/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ query: userQuery })
+                    });
+                    
+                    const data = await response.json();
+    
+                    loadingMessage.remove();
+    
+                    const botMessage = document.createElement('div');
+                    botMessage.className = 'message bot';
+                    botMessage.innerHTML = data.response || 'Sorry, I could not process your request.';
+                    messagesDiv.appendChild(botMessage);
+    
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                } catch (error) {
+                    console.error('Error:', error);
+                    loadingMessage.remove();
+                    const errorMessage = document.createElement('div');
+                    errorMessage.className = 'message bot';
+                    const errorDetails = error.message || error.toString() || 'Unknown error occurred';
+                    errorMessage.textContent = `Sorry, an error occurred while processing your request: ${errorDetails}`;
+                    messagesDiv.appendChild(errorMessage);
+                    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                } finally {
+                    // Re-enable input after bot has responded
+                    isBotThinking = false;
+                    setInputState(false);
+                }
+            }
+        });
+    </script>
+    
 {% endif %}
 
 </body>
