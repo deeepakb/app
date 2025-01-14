@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="/favicon.png" type="image/png">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-java.min.js"></script>
+
     <title>Chatbot Interface</title>
     <style>
         * {
@@ -10,9 +16,19 @@
             padding: 0;
             box-sizing: border-box;
         }
-    
+
+        @keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Open Sans', sans-serif;
             background-color: #1f1f1f;
             display: flex;
             justify-content: center;
@@ -69,18 +85,34 @@
         }
 
         .code-block {
-            width: 100%;
-            margin-top: 10px;
-        }
+        width: 100%;
+        margin-top: 10px;
+        background-color: #2b2b2b;
+        border-radius: 4px;
+        overflow: hidden;
+    }
 
-        .code-block pre {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            background-color: #2b2b2b;
-            padding: 10px;
-            border-radius: 4px;
-            overflow-x: auto;
-        }
+
+    .code-header {
+        font-weight: bold;
+        background-color: #2d2d2d;
+        color: #f5f5f5;
+        padding: 0.5em;
+        border-bottom: 1px solid #444;
+    }
+
+
+
+    .code-block pre {
+        margin: 0;
+        padding: 10px;
+        white-space: pre;
+        word-wrap: break-word;
+        overflow-x: auto;
+        overflow: visible;
+    }
+
+
         
         pre, code {
             white-space: pre-wrap;
@@ -88,11 +120,18 @@
         }
 
         .code-block code {
-            font-family: monospace;
-            font-size: 0.9em;
-            display: block;
-            tab-size: 4;
-        }
+        font-family: monospace;
+        font-size: 0.9em;
+        line-height: 1.5;
+        tab-size: 4;
+    }
+    .code-block pre code {
+    white-space: pre !important;
+    word-wrap: normal !important;
+    overflow-x: auto !important;
+}
+
+
         #connection-status {
             position: fixed;
             top: 10px;
@@ -203,6 +242,29 @@
             outline: none;
             background: #444;
         }
+        .clear-button {
+            background-color: #f44336;
+            color: white;
+            border: 1px solid #555;
+            padding: 12px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin-right: 10px;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: background-color 0.3s, opacity 0.3s;
+        }
+
+        .clear-button:hover:not(:disabled) {
+            background-color: #d32f2f;
+        }
+
+        .clear-button:disabled {
+            background-color: #888;
+            cursor: not-allowed;
+        }
 
         .auth-button {
             display: block;
@@ -247,7 +309,7 @@
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        width: 100%;
+        width: 80%;
         transition: opacity 0.5s, transform 0.5s;
     }
 
@@ -266,9 +328,6 @@
                     </ul>
     </div>
     
-    
-    
-    
     <div id="chat-container">
         <div id="logo">DeepakGPT</div>
         {% if 'user' in session %}
@@ -276,9 +335,11 @@
                 <!-- Start message will be inserted here initially -->
                 <div id="start-message"><strong>Hello {{session['username']}}, what would you like to know about Redshift?</strong></div>
             </div>
-            <div style="display: flex; align-items: center;">
+            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                <button id="clear-chat" class="clear-button">Clear Chat</button>
                 <input type="text" id="user-input" placeholder="Type your query here..." autocomplete="off">
             </div>
+            
         {% else %}
             <p>Please log in to access the chatbot.</p>
             <a href="{{ url_for('login') }}" class="auth-button">Login</a>
@@ -312,7 +373,14 @@
         const connectionStatus = document.getElementById('connection-status');
         let isConnected = true;
         let isBotThinking = false;
-    
+
+        function setClearButtonState(disabled) {
+            const clearChatButton = document.getElementById('clear-chat');
+            clearChatButton.disabled = disabled;
+            clearChatButton.style.opacity = disabled ? '0.5' : '1';
+            clearChatButton.style.cursor = disabled ? 'not-allowed' : 'pointer';
+        }
+
         // Function to capitalize the first letter of a string
         function capitalizeFirstLetter(str) {
             return str.charAt(0).toUpperCase() + str.slice(1);
@@ -348,7 +416,9 @@
             userInput.disabled = disabled;
             userInput.style.opacity = disabled ? '0.5' : '1';
             userInput.placeholder = disabled ? 'Please wait for the bot to finish...' : 'Type your query here...';
+            setClearButtonState(disabled);
         }
+
     
         // Listen for the Enter key press to send the message
         userInput.addEventListener('keypress', async (event) => {
@@ -407,7 +477,8 @@
                     botMessage.className = 'message bot';
                     botMessage.innerHTML = data.response || 'Sorry, I could not process your request.';
                     messagesDiv.appendChild(botMessage);
-    
+                    Prism.highlightAll();
+
                     messagesDiv.scrollTop = messagesDiv.scrollHeight;
                 } catch (error) {
                     console.error('Error:', error);
@@ -425,6 +496,47 @@
                 }
             }
         });
+
+        const clearChatButton = document.getElementById('clear-chat');
+
+clearChatButton.addEventListener('click', async () => {
+    if (!clearChatButton.disabled && confirm('Are you sure you want to clear the chat? This action cannot be undone.')) {
+        try {
+            setClearButtonState(true);
+            const response = await fetch('/clear-chat', { method: 'POST' });
+            if (response.ok) {
+                // Fade out existing messages
+                const messages = messagesDiv.children;
+                for (let i = 0; i < messages.length; i++) {
+                    messages[i].style.animation = 'fadeOut 0.5s forwards';
+                }
+
+                // Wait for fade out to complete
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Clear messages
+                messagesDiv.innerHTML = '';
+
+                // Add and fade in the start message
+                const startMessage = document.createElement('div');
+                startMessage.id = 'start-message';
+                startMessage.innerHTML = `<strong>Hello {{session['username']}}, what would you like to know about Redshift?</strong>`;
+                startMessage.style.animation = 'fadeIn 0.5s forwards';
+                messagesDiv.appendChild(startMessage);
+            } else {
+                throw new Error('Failed to clear chat');
+            }
+        } catch (error) {
+            console.error('Error clearing chat:', error);
+            alert('Failed to clear chat. Please try again.');
+        } finally {
+            setClearButtonState(false);
+        }
+    }
+});
+
+
+
     </script>
     
 {% endif %}

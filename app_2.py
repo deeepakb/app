@@ -237,7 +237,6 @@ def add_cache_control_headers(response):
     response.headers['Expires'] = '0'
     return response
 
-
 # Flask routes
 @app.route("/")
 @login_required
@@ -292,25 +291,34 @@ def chat():
         if isinstance(response, list):
             response = response[-1:]  # Keep only the last item in the list
 
-        # Use a more specific regex to capture code blocks and their language
+       # Use a more specific regex to capture code blocks and their language
         formatted_response = re.sub(
-            r'```(\w+)?\s*([\s\S]*?)```',
-            lambda m: f'<div class="code-block"><pre><code class="language-{m.group(1) or ""}">{html.escape(m.group(2))}</code></pre></div>',
-            response
-        )
+    r'```(\w+)?\s*([\s\S]*?)```',
+    lambda m: f'''
+        <div class="code-block">
+            <div class="code-header">{(m.group(1) or "Code").capitalize()}</div>
+            <pre><code class="language-{m.group(1) or "plaintext"}">{html.escape(m.group(2))}</code></pre>
+        </div>''',
+    response
+)
 
-        # Replace newlines with <br> for regular text, but not within code blocks
+
+        # Preserve newlines outside of code blocks
         formatted_response = re.sub(
-            r'(?<!>)(\n)(?!<)',
+            r'(?<!<pre><code)(\n)(?!</code></pre>)',
             '<br>',
             formatted_response
         )
 
-        # Collapse consecutive <br> tags into a single <br> to avoid too many line breaks
-        formatted_response = re.sub(r"(<br>\s*)+", "<br>", formatted_response)
+        # Preserve indentation with non-breaking spaces
         formatted_response = re.sub(r'^( +)', lambda m: '&nbsp;' * len(m.group(1)), formatted_response, flags=re.MULTILINE)
 
-        return jsonify({"response": formatted_response})
+        logger.info(f"formatted_response is {formatted_response}")
+
+        
+        return jsonify({
+            "response": formatted_response})
+
     except Exception as e:
         logger.error(f"Error during chat processing: {e}")
         return jsonify({"error": str(e)}), 500
@@ -321,6 +329,17 @@ def chat():
 @app.route('/heartbeat')
 def heartbeat():
     return 'OK', 200
+
+@app.route('/clear-chat', methods=['POST'])
+@login_required
+def clear_chat():
+    try:
+        username = session.get('username')
+        clear_conversation_history(username)
+        return jsonify({"message": "Chat cleared successfully"}), 200
+    except Exception as e:
+        logger.error(f"Error clearing chat: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/login')
