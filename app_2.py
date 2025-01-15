@@ -20,7 +20,6 @@ import html
 import uuid
 from datetime import datetime
 
-# Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
 
@@ -50,10 +49,8 @@ conversation_history_bucket = 'conversation-history-deepak'
 
 def clear_conversation_history(username):
     try:
-        # Create an empty list to represent a cleared conversation history
         empty_history = []
         
-        # Save the empty list to the user's conversation history file in S3
         s3_client.put_object(
             Bucket=conversation_history_bucket,
             Key=f"{username}/conversation_history.json",
@@ -89,21 +86,17 @@ def save_conversation_history(username, history):
 
 def append_conversation_history(username, new_messages):
     try:
-        # Try to load existing history
         try:
             existing_history = load_conversation_history(username)
         except:
             existing_history = []
 
-        # Append new messages to existing history
         updated_history = existing_history + new_messages
 
-        # Trim the history if it exceeds a certain length (e.g., 100 messages)
         max_history_length = 100
         if len(updated_history) > max_history_length:
             updated_history = updated_history[-max_history_length:]
 
-        # Save the updated history back to S3
         s3_client.put_object(
             Bucket=conversation_history_bucket,
             Key=f"{username}/conversation_history.json",
@@ -193,13 +186,11 @@ def recursive_rag(query, vector_store, conversation_history, iterations=4, origi
 
     # Update conversation history
     if iterations > 1:
-    # For all iterations except the last, include both original and follow-up queries
         conversation_history.extend([
         {"role": "user", "content": f"Original query: {original_query}\nFollow-up query: {query}"},
         {"role": "assistant", "content": response_content},
     ])
     else:
-    # For the last iteration, only include the original query
         conversation_history.extend([
         {"role": "user", "content": f"Original query: {original_query}"},
         {"role": "assistant", "content": response_content},
@@ -212,7 +203,6 @@ def recursive_rag(query, vector_store, conversation_history, iterations=4, origi
     next_response = recursive_rag(response_content, vector_store, conversation_history, iterations - 1, original_query)
     return next_response if next_response else response_content
 
-# Load FAISS vector store and embeddings
 embeddings = HuggingFaceEmbeddings(
     model_name="sentence-transformers/all-mpnet-base-v2",
     model_kwargs={'device': "cpu"},
@@ -257,41 +247,32 @@ def chat():
         user_data = session['user']
         decoded_token = pyjwt.decode(user_data['access_token'], options={"verify_signature": False})
 
-        # Convert the decoded token to a JSON string with indentation
         json_output = json.dumps(decoded_token, indent=2)
         logger.info("Access token is json_output")
 
         decoded_token = pyjwt.decode(user_data['id_token'], options={"verify_signature": False})
 
-        # Convert the decoded token to a JSON string with indentation
         json_output = json.dumps(decoded_token, indent=2)
 
         user_query = request.json.get("query", "")
         username = session.get('username')
         
-        # Load the conversation history
         conversation_history = load_conversation_history(username)
-        # Pass the full conversation history to recursive_rag
         response = recursive_rag(user_query, vector_store, conversation_history, 4, user_query)
         logger.info(f"response is {response}")
 
         conversation_history = load_conversation_history(username)
 
         if len(conversation_history) >= 8:
-    # Keep everything except the last 6 messages
             preserved_history = conversation_history[:-8]
-    # Keep only the last pair (last 2 messages)
             last_pair = conversation_history[-2:]
-    # Combine the preserved history with the last pair
             conversation_history = preserved_history + last_pair
             save_conversation_history(username, conversation_history)
 
 
-        # Modify the response to keep only the last iteration
         if isinstance(response, list):
-            response = response[-1:]  # Keep only the last item in the list
+            response = response[-1:]  
 
-       # Use a more specific regex to capture code blocks and their language
         formatted_response = re.sub(
     r'```(\w+)?\s*([\s\S]*?)```',
     lambda m: f'''
@@ -303,14 +284,12 @@ def chat():
 )
 
 
-        # Preserve newlines outside of code blocks
         formatted_response = re.sub(
             r'(?<!<pre><code)(\n)(?!</code></pre>)',
             '<br>',
             formatted_response
         )
 
-        # Preserve indentation with non-breaking spaces
         formatted_response = re.sub(r'^( +)', lambda m: '&nbsp;' * len(m.group(1)), formatted_response, flags=re.MULTILINE)
 
         logger.info(f"formatted_response is {formatted_response}")
@@ -391,7 +370,6 @@ def idp_response():
             else:
                 logger.warning("No access_token found in the response")
 
-            # Store the full token_data in session, or choose which parts you want to store
             session['user'] = token_data
             
             return redirect(url_for('home'))
@@ -403,18 +381,15 @@ def idp_response():
 
 @app.route('/logout', methods=['GET', 'POST'])
 def logout():
-    # Clear the user session
     session.clear()
     
     # Redirect to the login page
     response = redirect(url_for('login'))
     
-    # Add cache-control headers to prevent cached pages
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
     
-    # Ensure the response is returned without any cached session data
     return response
 
 

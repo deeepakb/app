@@ -381,12 +381,11 @@
             clearChatButton.style.cursor = disabled ? 'not-allowed' : 'pointer';
         }
 
-        // Function to capitalize the first letter of a string
         function capitalizeFirstLetter(str) {
             return str.charAt(0).toUpperCase() + str.slice(1);
         }
     
-        // Function to check connection
+        // Health check
         function checkConnection() {
             fetch('/heartbeat')
                 .then(response => {
@@ -408,10 +407,9 @@
                 });
         }
     
-        // Check connection every 5 seconds
         setInterval(checkConnection, 5000);
     
-        // Function to disable/enable the input field
+        //  Disable/enable the input field
         function setInputState(disabled) {
             userInput.disabled = disabled;
             userInput.style.opacity = disabled ? '0.5' : '1';
@@ -420,7 +418,6 @@
         }
 
     
-        // Listen for the Enter key press to send the message
         userInput.addEventListener('keypress', async (event) => {
             if (event.key === 'Enter' && !isBotThinking) {
                 if (!isConnected) {
@@ -439,7 +436,6 @@
                     }, 500);                 
                 }
     
-                // Capitalize the first letter of the message
                 userQuery = capitalizeFirstLetter(userQuery);
     
                 const userMessage = document.createElement('div');
@@ -511,13 +507,10 @@ clearChatButton.addEventListener('click', async () => {
                     messages[i].style.animation = 'fadeOut 0.5s forwards';
                 }
 
-                // Wait for fade out to complete
                 await new Promise(resolve => setTimeout(resolve, 500));
 
-                // Clear messages
                 messagesDiv.innerHTML = '';
 
-                // Add and fade in the start message
                 const startMessage = document.createElement('div');
                 startMessage.id = 'start-message';
                 startMessage.innerHTML = `<strong>Hello {{session['username']}}, what would you like to know about Redshift?</strong>`;

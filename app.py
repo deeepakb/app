@@ -20,7 +20,6 @@ import html
 import uuid
 from datetime import datetime
 
-# Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
 
@@ -202,55 +201,44 @@ def chat():
         user_data = session['user']
         decoded_token = pyjwt.decode(user_data['access_token'], options={"verify_signature": False})
 
-        # Convert the decoded token to a JSON string with indentation
         json_output = json.dumps(decoded_token, indent=2)
         logger.info("Access token is json_output")
 
         decoded_token = pyjwt.decode(user_data['id_token'], options={"verify_signature": False})
 
-        # Convert the decoded token to a JSON string with indentation
         json_output = json.dumps(decoded_token, indent=2)
 
         user_query = request.json.get("query", "")
         username = session.get('username')
 
-        # Load the conversation history
         conversation_history = load_conversation_history(username)
-        # Pass the full conversation history to recursive_rag
         response = recursive_rag(user_query, vector_store, conversation_history, 4, user_query)
         logger.info(f"response is {response}")
 
         conversation_history = load_conversation_history(username)
 
         if len(conversation_history) >= 8:
-    # Keep everything except the last 6 messages
             preserved_history = conversation_history[:-6]
-    # Keep only the last pair (last 2 messages)
             last_pair = conversation_history[-2:]
-    # Combine the preserved history with the last pair
             conversation_history = preserved_history + last_pair
             save_conversation_history(username, conversation_history)
 
 
-        # Modify the response to keep only the last iteration
         if isinstance(response, list):
-            response = response[-1:]  # Keep only the last item in the list
+            response = response[-1:] 
 
-        # Use a more specific regex to capture code blocks and their language
         formatted_response = re.sub(
             r'```(\w+)?\s*([\s\S]*?)```',
             lambda m: f'<div class="code-block"><pre><code class="language-{m.group(1) or ""}">{html.escape(m.group(2))}</code></pre></div>',
             response
         )
 
-        # Replace newlines with <br> for regular text, but not within code blocks
         formatted_response = re.sub(
             r'(?<!>)(\n)(?!<)',
             '<br>',
             formatted_response
         )
 
-        # Collapse consecutive <br> tags into a single <br> to avoid too many line breaks
         formatted_response = re.sub(r"(<br>\s*)+", "<br>", formatted_response)
         formatted_response = re.sub(r'^( +)', lambda m: '&nbsp;' * len(m.group(1)), formatted_response, flags=re.MULTILINE)
 
@@ -320,7 +308,6 @@ def idp_response():
             else:
                 logger.warning("No access_token found in the response")
 
-            # Store the full token_data in session, or choose which parts you want to store
             session['user'] = token_data
             
             return redirect(url_for('home'))
@@ -332,18 +319,14 @@ def idp_response():
 
 @app.route('/logout', methods=['GET', 'POST'])
 def logout():
-    # Clear the user session
     session.clear()
     
-    # Redirect to the login page
     response = redirect(url_for('login'))
     
-    # Add cache-control headers to prevent cached pages
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
     
-    # Ensure the response is returned without any cached session data
     return response
 
 
