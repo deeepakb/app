@@ -5,9 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="icon" href="/favicon.png" type="image/png">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/themes/prism-tomorrow.min.css" rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/prism.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.24.1/components/prism-java.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
+    <!-- Add languages you need -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
     <title>Chatbot Interface</title>
     <style>
@@ -26,6 +35,38 @@
     from { opacity: 0; }
     to { opacity: 1; }
 }
+pre[class*="language-"] {
+    border-radius: 6px;
+    margin: 1em 0;
+    padding: 1em;
+    overflow: auto;
+}
+
+code[class*="language-"] {
+    background: none;
+    font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+    text-align: left;
+    white-space: pre;
+    word-spacing: normal;
+    word-break: normal;
+    word-wrap: normal;
+    line-height: 1.5;
+}
+
+pre[class*="language-cpp"],
+code[class*="language-cpp"] {
+    color: #f8f8f2;
+    background: none;
+    text-shadow: 0 1px rgba(0, 0, 0, 0.3);
+    font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+    text-align: left;
+    white-space: pre;
+    word-spacing: normal;
+    word-break: normal;
+    word-wrap: normal;
+    line-height: 1.5;
+}
+
 
         body {
             font-family: 'Open Sans', sans-serif;
@@ -68,68 +109,7 @@
             word-break: break-all;
         }
 
-        .message pre {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            max-width: 100%;
-            overflow-x: auto;
-        }
 
-        .message code {
-            display: block;
-            background-color: #2b2b2b;
-            padding: 10px;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 0.9em;
-        }
-
-        .code-block {
-        width: 100%;
-        margin-top: 10px;
-        background-color: #2b2b2b;
-        border-radius: 4px;
-        overflow: hidden;
-    }
-
-
-    .code-header {
-        font-weight: bold;
-        background-color: #2d2d2d;
-        color: #f5f5f5;
-        padding: 0.5em;
-        border-bottom: 1px solid #444;
-    }
-
-
-
-    .code-block pre {
-        margin: 0;
-        padding: 10px;
-        white-space: pre;
-        word-wrap: break-word;
-        overflow-x: auto;
-        overflow: visible;
-    }
-
-
-        
-        pre, code {
-            white-space: pre-wrap;
-            tab-size: 4;
-        }
-
-        .code-block code {
-        font-family: monospace;
-        font-size: 0.9em;
-        line-height: 1.5;
-        tab-size: 4;
-    }
-    .code-block pre code {
-    white-space: pre !important;
-    word-wrap: normal !important;
-    overflow-x: auto !important;
-}
 
 
         #connection-status {
@@ -196,6 +176,25 @@
             display: flex;
             flex-direction: column;
         }
+
+        .message.bot {
+    max-width: 75%;
+    width: fit-content;
+}
+
+    .message.bot pre[class*="language-"] {
+        max-width: 100%;
+        margin: 0.5em 0;
+        white-space: pre-wrap;    
+        word-wrap: break-word;       
+        overflow-x: auto;            
+    }
+
+    .message.bot code[class*="language-"] {
+        white-space: pre-wrap;      
+        word-wrap: break-word;      
+    }
+
 
         .user {
             background: #4a90e2;
@@ -316,17 +315,51 @@
     #start-message.hide {
         animation: fadeOutUp 0.5s forwards;
     }
+    .upload-button {
+    width: 100%;
+    padding: 12px;
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s;
+}
+
+.upload-button:hover {
+    background-color: #357abd;
+}
+
+.file-list {
+    margin-top: 20px;
+    color: #e5e5e5;
+}
+
+.file-item {
+    padding: 10px;
+    margin: 5px 0;
+    background-color: #333;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    word-break: break-all;
+}
 
 
     </style>    
 </head>
 <body>
-    <div id="sidebar-left">
-        <h3 style="font-size: 1.2rem; color: #e5e5e5; margin-bottom: 20px;">Conversations</h3>
+    <!-- Replace the existing sidebar-left div with this -->
+<div id="sidebar-left">
+    <h3 style="font-size: 1.2rem; color: #e5e5e5; margin-bottom: 20px;">CR Test</h3>
     
-                <p style="color: #888; font-size: 0.9rem;">No conversations yet.</p>
-                    </ul>
+    <div class="upload-section">
+        <input type="file" id="file-input" style="display: none;" accept=".diff,.patch">
+        <button id="upload-button" class="upload-button">Upload Diff File</button>
+        <div id="file-list" class="file-list"></div>
     </div>
+</div>
+
     
     <div id="chat-container">
         <div id="logo">DeepakGPT</div>
@@ -428,7 +461,6 @@
                 let userQuery = userInput.value.trim();
                 if (userQuery === '') return;
     
-                // Remove the start message if it's still visible
                 if (startMessage) {
                     startMessage.classList.add('hide');
                     setTimeout(() => {
@@ -454,8 +486,7 @@
     
                 messagesDiv.scrollTop = messagesDiv.scrollHeight;
     
-                // Disable input while bot is thinking
-                isBotThinking = true;
+                    isBotThinking = true;
                 setInputState(true);
     
                 try {
@@ -468,12 +499,14 @@
                     const data = await response.json();
     
                     loadingMessage.remove();
-    
+                   
+
+
                     const botMessage = document.createElement('div');
                     botMessage.className = 'message bot';
                     botMessage.innerHTML = data.response || 'Sorry, I could not process your request.';
                     messagesDiv.appendChild(botMessage);
-                    Prism.highlightAll();
+                    Prism.highlightAll(botMessage);
 
                     messagesDiv.scrollTop = messagesDiv.scrollHeight;
                 } catch (error) {
@@ -486,7 +519,6 @@
                     messagesDiv.appendChild(errorMessage);
                     messagesDiv.scrollTop = messagesDiv.scrollHeight;
                 } finally {
-                    // Re-enable input after bot has responded
                     isBotThinking = false;
                     setInputState(false);
                 }
@@ -529,6 +561,41 @@ clearChatButton.addEventListener('click', async () => {
 });
 
 
+document.getElementById('upload-button').addEventListener('click', () => {
+    document.getElementById('file-input').click();
+});
+
+document.getElementById('file-input').addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            // Create a new file item in the list
+            const fileList = document.getElementById('file-list');
+            fileList.innerHTML = ''; // Clear previous files
+            
+            // Create container for file info
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-item';
+            
+            // Add file name
+            const fileName = document.createElement('div');
+            fileName.className = 'file-name';
+            fileName.textContent = file.name;
+            
+            // Add file content
+            const fileContent = document.createElement('pre');
+            fileContent.className = 'file-content';
+            fileContent.textContent = e.target.result;
+            
+            // Append elements
+            fileItem.appendChild(fileName);
+            fileItem.appendChild(fileContent);
+            fileList.appendChild(fileItem);
+        };
+        reader.readAsText(file);
+    }
+});
 
     </script>
     

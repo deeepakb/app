@@ -107,6 +107,7 @@ def append_conversation_history(username, new_messages):
     except Exception as e:
         logger.error(f"Error saving conversation history for user {username}: {e}")
 
+
 # Recursive RAG function
 def recursive_rag(query, vector_store, conversation_history, iterations=4, original_query=None):
     if iterations <= 0:
@@ -115,7 +116,7 @@ def recursive_rag(query, vector_store, conversation_history, iterations=4, origi
     if original_query is None:
         original_query = query
 
-    results = vector_store.similarity_search(query, k=35)
+    results = vector_store.similarity_search(query, k=17)
     if not results:
         logger.info("No results found for the query.")
         return None
@@ -180,11 +181,11 @@ def recursive_rag(query, vector_store, conversation_history, iterations=4, origi
     }
 
     bedrock = boto3.client('bedrock-runtime')
-    time.sleep(15)
+    #time.sleep(1)
+    #logger.info(f"\nMessages is {messages} and its size is {len(messages)}\n")
     response = bedrock.invoke_model(**kwargs)
     response_content = json.loads(response['body'].read())['content'][0]['text']
 
-    # Update conversation history
     if iterations > 1:
         conversation_history.extend([
         {"role": "user", "content": f"Original query: {original_query}\nFollow-up query: {query}"},
@@ -271,32 +272,29 @@ def chat():
 
 
         if isinstance(response, list):
-            response = response[-1:]  
-
-        formatted_response = re.sub(
-    r'```(\w+)?\s*([\s\S]*?)```',
-    lambda m: f'''
-        <div class="code-block">
-            <div class="code-header">{(m.group(1) or "Code").capitalize()}</div>
-            <pre><code class="language-{m.group(1) or "plaintext"}">{html.escape(m.group(2))}</code></pre>
-        </div>''',
-    response
-)
+            response = response[-1:] 
 
 
-        formatted_response = re.sub(
-            r'(?<!<pre><code)(\n)(?!</code></pre>)',
-            '<br>',
-            formatted_response
-        )
+        if isinstance(response, str):
+            import re
+            opening_blocks = response.count('```')
+            
+            if opening_blocks % 2 != 0:
+                response += '\n```'
 
-        formatted_response = re.sub(r'^( +)', lambda m: '&nbsp;' * len(m.group(1)), formatted_response, flags=re.MULTILINE)
+            code_pattern = re.compile(r'```([a-zA-Z0-9]+)?(.*?)```', re.DOTALL)
+            matches = code_pattern.findall(response)
+            
+            for language, match in matches:
+                escaped_code = html.escape(match.strip())
+                wrapped_code = f'<pre><code class="language-{language or "plaintext"}">{escaped_code}</code></pre>'
+                response = response.replace(f"```{language or ''}{match}```", wrapped_code)
 
-        logger.info(f"formatted_response is {formatted_response}")
+            
+        logger.info(f"formatted response is {response}")
 
-        
         return jsonify({
-            "response": formatted_response})
+            "response": response})
 
     except Exception as e:
         logger.error(f"Error during chat processing: {e}")
