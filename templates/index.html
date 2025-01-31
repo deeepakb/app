@@ -42,6 +42,42 @@ pre[class*="language-"] {
     overflow: auto;
 }
 
+.analysis-content {
+    white-space: pre-wrap;
+    font-family: monospace;
+    background-color: #1e1e1e;
+    padding: 15px;
+    border-radius: 5px;
+    margin-top: 10px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.analysis-content br {
+    margin-bottom: 5px;
+}
+
+
+/* Add to your existing CSS */
+.file-analysis {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #2b2b2b;
+    border-radius: 4px;
+}
+
+.file-analysis p {
+    margin: 5px 0;
+    color: #e5e5e5;
+}
+
+.file-name {
+    font-weight: bold;
+    color: #4a90e2;
+    margin-bottom: 5px;
+}
+
+
 code[class*="language-"] {
     background: none;
     font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
@@ -80,7 +116,7 @@ code[class*="language-cpp"] {
         }
     
         #sidebar-left {
-            width: 250px;
+            width: 400px;
             background-color: #2b2b2b;
             height: 100vh;
             position: fixed;
@@ -133,18 +169,19 @@ code[class*="language-cpp"] {
         }
 
         #chat-container {
-            position: fixed;
-            left: 250px;
-            right: 250px;
-            top: 0;
-            bottom: 0;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            padding: 20px;
-            box-sizing: border-box;
-            overflow: hidden;
-        }
+    position: fixed;
+    left: 400px; /* Changed from 250px to 300px to match sidebar width */
+    right: 0px; /* Changed from 250px to 0px to extend to the right edge */
+    top: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
     
         #logo {
             font-size: 1.5rem;
@@ -298,6 +335,26 @@ code[class*="language-cpp"] {
             transform: translate(-50%, -100%);
         }
     }
+    .analysis-spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-radius: 50%;
+    border-top: 4px solid #4a90e2;
+    width: 40px;
+    height: 40px;
+    animation: analysis-spin 1s linear infinite;
+    margin: 20px auto;
+}
+
+.loading-text {
+    text-align: center;
+    color: #e5e5e5;
+    margin-top: 10px;
+}
+
+@keyframes analysis-spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
 
     #start-message {
         font-size: 2rem;
@@ -356,7 +413,12 @@ code[class*="language-cpp"] {
     <div class="upload-section">
         <input type="file" id="file-input" style="display: none;" accept=".diff,.patch">
         <button id="upload-button" class="upload-button">Upload Diff File</button>
-        <div id="file-list" class="file-list"></div>
+        <div id="file-list" class="file-list">
+        <div id="analysis-loading" style="display: none;">
+            <div class="analysis-spinner"></div>
+            <div class="loading-text">Analyzing code changes...</div>
+        </div>
+    </div>
     </div>
 </div>
 
@@ -365,7 +427,6 @@ code[class*="language-cpp"] {
         <div id="logo">DeepakGPT</div>
         {% if 'user' in session %}
             <div id="messages">
-                <!-- Start message will be inserted here initially -->
                 <div id="start-message"><strong>Hello {{session['username']}}, what would you like to know about Redshift?</strong></div>
             </div>
             <div style="display: flex; align-items: center; margin-bottom: 10px;">
@@ -379,7 +440,7 @@ code[class*="language-cpp"] {
         {% endif %}
     </div>
     
-    <div id="sidebar-right">
+    <!--<div id="sidebar-right">
         <h3>Token:</h3>
         <pre id="token-info">
             {% if 'user' in session %}
@@ -396,7 +457,7 @@ code[class*="language-cpp"] {
                 No token information available.
             {% endif %}
         </pre>
-    </div>
+    </div> -->
 
     {% if 'user' in session %}
     <script>
@@ -565,37 +626,62 @@ document.getElementById('upload-button').addEventListener('click', () => {
     document.getElementById('file-input').click();
 });
 
-document.getElementById('file-input').addEventListener('change', (event) => {
+// Add this to your existing JavaScript code
+// In your existing file input event listener
+document.getElementById('file-input').addEventListener('change', async (event) => {
     const file = event.target.files[0];
     if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            // Create a new file item in the list
-            const fileList = document.getElementById('file-list');
-            fileList.innerHTML = ''; // Clear previous files
-            
-            // Create container for file info
-            const fileItem = document.createElement('div');
-            fileItem.className = 'file-item';
-            
-            // Add file name
-            const fileName = document.createElement('div');
-            fileName.className = 'file-name';
-            fileName.textContent = file.name;
-            
-            // Add file content
-            const fileContent = document.createElement('pre');
-            fileContent.className = 'file-content';
-            fileContent.textContent = e.target.result;
-            
-            // Append elements
-            fileItem.appendChild(fileName);
-            fileItem.appendChild(fileContent);
-            fileList.appendChild(fileItem);
-        };
-        reader.readAsText(file);
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const fileList = document.getElementById('file-list');
+        const loadingDiv = document.getElementById('analysis-loading');
+        
+        try {
+            // Clear previous content and show loading
+            fileList.innerHTML = '';
+            loadingDiv.style.display = 'block';
+            fileList.appendChild(loadingDiv);
+
+            const response = await fetch('/upload-diff', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            // Hide loading animation
+            loadingDiv.style.display = 'none';
+
+            if (response.ok) {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                
+                // Convert newlines to <br> tags and preserve formatting
+                const formattedAnalysis = result.analysis.replace(/\n/g, '<br>');
+                
+                fileItem.innerHTML = `
+                    <div class="file-name">${file.name}</div>
+                    <div class="analysis-content">
+                        ${formattedAnalysis}
+                    </div>
+                `;
+                
+                fileList.appendChild(fileItem);
+            } else {
+                throw new Error(result.error || 'Failed to process file');
+            }
+        } catch (error) {
+            // Hide loading animation on error
+            loadingDiv.style.display = 'none';
+            console.error('Error uploading file:', error);
+            alert('Error processing file: ' + error.message);
+        }
     }
 });
+
+
+
 
     </script>
     

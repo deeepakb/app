@@ -335,6 +335,265 @@ def login():
     url = f'{AMAZON_FEDERATE_URL}/api/oauth2/v1/authorize'
     return redirect(f'{url}?{requests.compat.urlencode(query_params)}')
 
+# Add this new route to your backend
+@app.route('/upload-diff', methods=['POST'])
+@login_required
+def upload_diff():
+    try:
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        
+        if file.filename == '':
+            return jsonify({'error': 'No file selected'}), 400
+            
+        if not file.filename.endswith(('.diff', '.patch')):
+            return jsonify({'error': 'Invalid file type. Only .diff or .patch files are allowed'}), 400
+
+        # Read the content of the diff file
+        diff_content = file.read().decode('utf-8')
+        
+        # Process the diff content
+        analysis_result = process_diff_content(diff_content)
+        formatted_analysis = format_security_analysis(analysis_result)
+        
+        return jsonify({
+            'message': 'File processed successfully',
+            'filename': file.filename,
+            'analysis': formatted_analysis
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error processing diff file: {e}")
+        return jsonify({'error': str(e)}), 500
+
+def process_diff_content(diff_content):
+    """
+    Process the diff content using Claude LLM with RAG to analyze security concerns and code review validity
+    """
+    try:
+        # Basic diff statistics
+        lines = diff_content.split('\n')
+        files_changed = len([l for l in lines if l.startswith('diff --git')])
+        additions = len([l for l in lines if l.startswith('+')])
+        deletions = len([l for l in lines if l.startswith('-')])
+        
+        # Don't count the +++ and --- lines that indicate file names
+        additions -= len([l for l in lines if l.startswith('+++')])
+        deletions -= len([l for l in lines if l.startswith('---')])
+
+        # Perform RAG search for similar content
+        results = vector_store.similarity_search(diff_content, k=17)
+        
+        # Group and process similar files
+        file_groups = defaultdict(list)
+        for chunk in results:
+            file_path = chunk.metadata.get('file_path', '')
+            file_name = os.path.basename(file_path)
+            file_groups[file_name].append(chunk)
+
+        # Deduplicate and sort chunks
+        sorted_deduplicated_chunks = []
+        for file_name, chunks in file_groups.items():
+            sorted_file_chunks = sorted(chunks, key=lambda x: int(x.metadata.get("id", "9999")))
+            deduplicated_file_chunks = []
+            seen_content = set()
+            for chunk in sorted_file_chunks:
+                chunk_content = chunk.page_content.strip()
+                if chunk_content not in seen_content:
+                    deduplicated_file_chunks.append(chunk)
+                    seen_content.add(chunk_content)
+            sorted_deduplicated_chunks.extend(deduplicated_file_chunks)
+
+        # Prepare context from similar files
+        similar_content = ""
+        for chunk in sorted_deduplicated_chunks:
+            similar_content += f"Similar File: {os.path.basename(chunk.metadata.get('file_path', 'Unknown'))}\n"
+            similar_content += chunk.page_content.strip() + "\n\n"
+        similar_content = re.sub(r'\n{3,}', '\n\n', similar_content).strip()
+
+        # Prepare the prompt for the LLM
+        security_prompt = """
+            You are a senior security engineer reviewing code changes across multiple languages (Python, JavaScript, C++). Analyze the following for potential security issues and code quality concerns.
+
+            Focus on these key areas:
+            1. Memory & Resource Management:
+            - Buffer overflows and underflows
+            - Use-after-free vulnerabilities
+            - Null pointer dereferences
+            - Memory leaks
+            - Out-of-bounds read/write
+            - Resource cleanup
+            - Integer overflow/underflow
+            - Thread safety violations
+
+            2. Input Validation & Sanitization:
+            - SQL/NoSQL injection
+            - OS command injection
+            - Path traversal
+            - Buffer boundary checks
+            - Input size validation
+            - Type safety
+            - Pointer validation
+            - Array bounds checking
+
+            3. Authentication & Authorization:
+            - Missing authorization checks
+            - Improper authentication
+            - Session management
+            - Privilege escalation
+            - setuid/setgid ordering
+            - Permission validation
+            - Access control implementation
+
+            4. Cryptography & Data Protection:
+            - Weak cryptographic implementations
+            - Insecure random number generation
+            - Certificate validation
+            - Sensitive data exposure
+            - Clear text credentials
+            - Secure storage patterns
+            - Encryption consistency
+
+            5. Memory Safety (C++ Specific):
+            - Pointer arithmetic
+            - sizeof usage
+            - Stack address returns
+            - Multiple lock handling
+            - Pointer scaling
+            - Buffer access safety
+            - Memory allocation
+
+            6. Client-Side Security (JavaScript Specific):
+            - Cross-site scripting (XSS)
+            - DOM manipulation
+            - eval() usage
+            - Async operation safety
+            - CSRF protection
+            - Frame security
+            - Browser API safety
+
+            7. System & File Operations:
+            - File permission handling
+            - Temporary file security
+            - Directory traversal
+            - File extension validation
+            - Concurrent file access
+            - Resource locking
+            - File system race conditions
+
+            8. Error Handling & Logging:
+            - Exception management
+            - Error propagation
+            - Stack trace exposure
+            - Logging of sensitive data
+            - Null checks
+            - Return value validation
+            - Switch statement completeness
+
+            9. Language-Specific Patterns:
+            C++:
+            - RAII compliance
+            - Smart pointer usage
+            - STL container safety
+            - Const correctness
+            JavaScript:
+            - Promise handling
+            - Prototype safety
+            - Event loop considerations
+            Python:
+            - Deserialization safety
+            - Package import security
+            - Context manager usage
+
+            For each issue found:
+            - Identify the specific location and language context
+            - Explain the potential risk and exploit scenario
+            - Provide a recommended fix with language-specific best practices
+            - Rate the severity (Critical/High/Medium/Low)
+            - Include relevant secure coding patterns
+            - Reference similar patterns in the existing codebase
+
+            Diff content to analyze:
+            {diff_content}
+
+            Similar code files for context:
+            {similar_content}
+
+            Begin your analysis with memory safety and critical security issues first, followed by language-specific concerns. Do not include any preamble or conclusion.
+            """
+
+        # Prepare the messages for Claude
+        messages = [
+            {
+                "role": "user",
+                "content": security_prompt.format(
+                    diff_content=diff_content,
+                    similar_content=similar_content
+                )
+            }
+        ]
+
+        # Configure Claude parameters
+        kwargs = {
+            "modelId": "anthropic.claude-3-5-sonnet-20241022-v2:0",
+            "contentType": "application/json",
+            "accept": "application/json",
+            "body": json.dumps({
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": 1000,
+                "top_k": 10,
+                "stop_sequences": [],
+                "temperature": 0.3,
+                "top_p": 0.95,
+                "messages": messages
+            })
+        }
+
+        # Call Claude using AWS Bedrock
+        bedrock = boto3.client('bedrock-runtime')
+        response = bedrock.invoke_model(**kwargs)
+        analysis_response = json.loads(response['body'].read())['content'][0]['text']
+
+        # Return both basic stats and the security analysis
+        return {
+            'basic_stats': {
+                'files_changed': files_changed,
+                'additions': additions,
+                'deletions': deletions,
+                'total_changes': additions + deletions
+            },
+            'security_analysis': analysis_response,
+            'timestamp': datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"Error in diff processing: {e}")
+        raise
+
+
+def format_security_analysis(analysis_result):
+    """
+    Helper function to format the security analysis results for display
+    """
+    return f"""
+    Code Review Analysis Report
+    -------------------------
+    Time: {analysis_result['timestamp']}
+    
+    Basic Statistics:
+    - Files Changed: {analysis_result['basic_stats']['files_changed']}
+    - Lines Added: {analysis_result['basic_stats']['additions']}
+    - Lines Deleted: {analysis_result['basic_stats']['deletions']}
+    - Total Changes: {analysis_result['basic_stats']['total_changes']}
+    
+    Security Analysis:
+    {analysis_result['security_analysis']}
+    """
+
+
+
 @app.route('/idpresponse')
 def idp_response():
 
