@@ -30,7 +30,6 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 app.config['SESSION_TYPE'] = 'filesystem'
 Session(app)
 
-# Constants for Amazon Federate OAuth2
 AMAZON_FEDERATE_URL = 'https://idp-integ.federate.amazon.com'
 REDIRECT_URI = 'http://elb-1340525831.us-west-2.elb.amazonaws.com/idpresponse'
 CLIENT_ID = 'deepak_chatbot'
@@ -335,7 +334,6 @@ def login():
     url = f'{AMAZON_FEDERATE_URL}/api/oauth2/v1/authorize'
     return redirect(f'{url}?{requests.compat.urlencode(query_params)}')
 
-# Add this new route to your backend
 @app.route('/upload-diff', methods=['POST'])
 @login_required
 def upload_diff():
@@ -351,10 +349,8 @@ def upload_diff():
         if not file.filename.endswith(('.diff', '.patch')):
             return jsonify({'error': 'Invalid file type. Only .diff or .patch files are allowed'}), 400
 
-        # Read the content of the diff file
         diff_content = file.read().decode('utf-8')
         
-        # Process the diff content
         analysis_result = process_diff_content(diff_content)
         formatted_analysis = format_security_analysis(analysis_result)
         
@@ -373,27 +369,22 @@ def process_diff_content(diff_content):
     Process the diff content using Claude LLM with RAG to analyze security concerns and code review validity
     """
     try:
-        # Basic diff statistics
         lines = diff_content.split('\n')
         files_changed = len([l for l in lines if l.startswith('diff --git')])
         additions = len([l for l in lines if l.startswith('+')])
         deletions = len([l for l in lines if l.startswith('-')])
         
-        # Don't count the +++ and --- lines that indicate file names
         additions -= len([l for l in lines if l.startswith('+++')])
         deletions -= len([l for l in lines if l.startswith('---')])
 
-        # Perform RAG search for similar content
         results = vector_store.similarity_search(diff_content, k=17)
         
-        # Group and process similar files
         file_groups = defaultdict(list)
         for chunk in results:
             file_path = chunk.metadata.get('file_path', '')
             file_name = os.path.basename(file_path)
             file_groups[file_name].append(chunk)
 
-        # Deduplicate and sort chunks
         sorted_deduplicated_chunks = []
         for file_name, chunks in file_groups.items():
             sorted_file_chunks = sorted(chunks, key=lambda x: int(x.metadata.get("id", "9999")))
@@ -406,14 +397,12 @@ def process_diff_content(diff_content):
                     seen_content.add(chunk_content)
             sorted_deduplicated_chunks.extend(deduplicated_file_chunks)
 
-        # Prepare context from similar files
         similar_content = ""
         for chunk in sorted_deduplicated_chunks:
             similar_content += f"Similar File: {os.path.basename(chunk.metadata.get('file_path', 'Unknown'))}\n"
             similar_content += chunk.page_content.strip() + "\n\n"
         similar_content = re.sub(r'\n{3,}', '\n\n', similar_content).strip()
 
-        # Prepare the prompt for the LLM
         security_prompt = """
             You are a senior security engineer reviewing code changes across multiple languages (Python, JavaScript, C++). Analyze the following for potential security issues and code quality concerns.
 
@@ -524,7 +513,6 @@ def process_diff_content(diff_content):
             Begin your analysis with memory safety and critical security issues first, followed by language-specific concerns. Do not include any preamble or conclusion.
             """
 
-        # Prepare the messages for Claude
         messages = [
             {
                 "role": "user",
@@ -535,7 +523,6 @@ def process_diff_content(diff_content):
             }
         ]
 
-        # Configure Claude parameters
         kwargs = {
             "modelId": "anthropic.claude-3-5-sonnet-20241022-v2:0",
             "contentType": "application/json",
@@ -551,12 +538,10 @@ def process_diff_content(diff_content):
             })
         }
 
-        # Call Claude using AWS Bedrock
         bedrock = boto3.client('bedrock-runtime')
         response = bedrock.invoke_model(**kwargs)
         analysis_response = json.loads(response['body'].read())['content'][0]['text']
 
-        # Return both basic stats and the security analysis
         return {
             'basic_stats': {
                 'files_changed': files_changed,
@@ -640,7 +625,6 @@ def idp_response():
 def logout():
     session.clear()
     
-    # Redirect to the login page
     response = redirect(url_for('login'))
     
     response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'

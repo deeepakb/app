@@ -1,0 +1,127 @@
+view logs - journalctl -u flaskapp --no-pager --lines=50
+start - sudo systemctl start flaskapp
+stop - sudo systemctl stop flaskapp
+restart -  sudo systemctl restart flaskapp
+status - sudo systemctl status flaskapp
+enable auto start on reboot - sudo systemctl enable flaskapp
+reload after changes - sudo systemctl daemon-reload
+
+Situation	                                    Command to Run
+Flask app is stopped, and I want to start it	sudo systemctl start flaskapp
+Flask app is running, but I made code changes	sudo systemctl restart flaskapp
+Flask app is failing, and I want to check logs	journalctl -u flaskapp --no-pager --lines=50
+Flask app should start automatically on reboot	sudo systemctl enable flaskapp
+Flask app is running, but I need to stop it	    sudo systemctl stop flaskapp
+I edited the systemd service file	            sudo systemctl daemon-reload
+
+# Cron Syntax Format
+# * * * * * command_to_run
+# - - - - -
+# | | | | |
+# | | | | +---- Day of week (0 - 7) (Sunday = 0 or 7)
+# | | | +------ Month (1 - 12)
+# | | +-------- Day of month (1 - 31)
+# | +---------- Hour (0 - 23)
+# +------------ Minute (0 - 59)
+
+# Common Time Scheduling:
+# Every minute
+* * * * * command_to_run
+
+# Every hour
+0 * * * * command_to_run
+
+# Every day at midnight
+0 0 * * * command_to_run
+
+# Every day at 11:59 PM
+59 23 * * * command_to_run
+
+# Every Monday at midnight
+0 0 * * 1 command_to_run
+
+# Every Friday at 11:59 PM
+59 23 * * 5 command_to_run
+
+# Every first day of the month at midnight
+0 0 1 * * command_to_run
+
+# Every 15th of the month at noon
+0 12 15 * * command_to_run
+
+# Every hour on the hour (e.g., 1:00, 2:00, etc.)
+0 1-23/1 * * * command_to_run
+
+# Examples of Specific Schedules:
+# Run every 5 minutes
+*/5 * * * * command_to_run
+
+# Run every 30 minutes
+0,30 * * * * command_to_run
+
+# Run every day at 8:00 AM
+0 8 * * * command_to_run
+
+# Run every Sunday at 3:00 PM
+0 15 * * 0 command_to_run
+
+# Run every 1st and 15th of the month at 6:30 AM
+30 6 1,15 * * command_to_run
+
+# Run at 2:00 AM on the 1st of every month
+0 2 1 * * command_to_run
+
+# Run every Wednesday at 6:00 PM
+0 18 * * 3 command_to_run
+
+# Run every hour on weekdays (Mon-Fri)
+0 * * * 1-5 command_to_run
+
+# Other Tips:
+# Multiple values for fields (e.g., Mondays and Fridays at noon)
+0 12 * * 1,5 command_to_run
+
+# Run at specific minutes (e.g., 5, 15, 25, etc.)
+5,15,25,35,45,55 * * * * command_to_run
+
+# Special Time and Date Fields:
+# @reboot - Run once at system startup
+@reboot command_to_run
+
+# @hourly - Run once every hour (same as `0 * * * *`)
+@hourly command_to_run
+
+# @daily - Run once a day at midnight (same as `0 0 * * *`)
+@daily command_to_run
+
+# @weekly - Run once a week at midnight on Sunday (same as `0 0 * * 0`)
+@weekly command_to_run
+
+# @monthly - Run once a month at midnight on the 1st (same as `0 0 1 * *`)
+@monthly command_to_run
+
+# @yearly - Run once a year on January 1st at midnight (same as `0 0 1 1 *`)
+@yearly command_to_run
+
+# Using Environment Variables in Cron Jobs:
+SHELL=/bin/bash
+PATH=/usr/bin:/bin:/usr/sbin:/sbin
+HOME=/home/ec2-user
+
+59 23 * * 6 /usr/bin/python2 /home/ec2-user/internProject/app/ingest.py >> /home/ec2-user/cron_job.log 2>&1
+
+# Check Cron Logs:
+# For Ubuntu/Debian:
+grep CRON /var/log/syslog
+
+# For Amazon Linux or RHEL/CentOS:
+sudo journalctl -u cron
+
+# Removing or Disabling Cron Jobs:
+# To remove a cron job:
+crontab -e  # and delete the corresponding line
+
+# To disable a cron job without removing it (comment it out):
+# 59 23 * * 6 /usr/bin/python2 /home/ec2-user/internProject/app/ingest.py >> /home/ec2-user/cron_job.log 2>&1
+# becomes
+# # 59 23 * * 6 /usr/bin/python2 /home/ec2-user/internProject/app/ingest.py >> /home/ec2-user/cron_job.log 2>&1

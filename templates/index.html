@@ -9,7 +9,6 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" rel="stylesheet" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
-    <!-- Add languages you need -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
@@ -215,9 +214,15 @@ code[class*="language-cpp"] {
         }
 
         .message.bot {
-    max-width: 75%;
-    width: fit-content;
+    background: #333333;
+    color: #e5e5e5;
+    align-self: flex-start;
+    display: flex;
+    align-items: flex-start; /* Changed from center */
+    white-space: pre-wrap; /* Add this */
+    word-wrap: break-word; /* Add this */
 }
+
 
     .message.bot pre[class*="language-"] {
         max-width: 100%;
@@ -406,7 +411,6 @@ code[class*="language-cpp"] {
     </style>    
 </head>
 <body>
-    <!-- Replace the existing sidebar-left div with this -->
 <div id="sidebar-left">
     <h3 style="font-size: 1.2rem; color: #e5e5e5; margin-bottom: 20px;">CR Test</h3>
     
@@ -503,7 +507,6 @@ code[class*="language-cpp"] {
     
         setInterval(checkConnection, 5000);
     
-        //  Disable/enable the input field
         function setInputState(disabled) {
             userInput.disabled = disabled;
             userInput.style.opacity = disabled ? '0.5' : '1';
@@ -565,6 +568,9 @@ code[class*="language-cpp"] {
 
                     const botMessage = document.createElement('div');
                     botMessage.className = 'message bot';
+                    const formattedResponse = data.response
+                        .replace(/\n/g, '<br>')
+                        .replace(/\s{2,}/g, match => '&nbsp;'.repeat(match.length));
                     botMessage.innerHTML = data.response || 'Sorry, I could not process your request.';
                     messagesDiv.appendChild(botMessage);
                     Prism.highlightAll(botMessage);
@@ -594,7 +600,6 @@ clearChatButton.addEventListener('click', async () => {
             setClearButtonState(true);
             const response = await fetch('/clear-chat', { method: 'POST' });
             if (response.ok) {
-                // Fade out existing messages
                 const messages = messagesDiv.children;
                 for (let i = 0; i < messages.length; i++) {
                     messages[i].style.animation = 'fadeOut 0.5s forwards';
@@ -606,7 +611,7 @@ clearChatButton.addEventListener('click', async () => {
 
                 const startMessage = document.createElement('div');
                 startMessage.id = 'start-message';
-                startMessage.innerHTML = `<strong>Hello {{session['username']}}, what would you like to know about Redshift?</strong>`;
+                startMessage.innerHTML = `<strong>Hello {{session.get('username')}}, what would you like to know about Redshift?</strong>`;
                 startMessage.style.animation = 'fadeIn 0.5s forwards';
                 messagesDiv.appendChild(startMessage);
             } else {
@@ -626,8 +631,6 @@ document.getElementById('upload-button').addEventListener('click', () => {
     document.getElementById('file-input').click();
 });
 
-// Add this to your existing JavaScript code
-// In your existing file input event listener
 document.getElementById('file-input').addEventListener('change', async (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -638,7 +641,6 @@ document.getElementById('file-input').addEventListener('change', async (event) =
         const loadingDiv = document.getElementById('analysis-loading');
         
         try {
-            // Clear previous content and show loading
             fileList.innerHTML = '';
             loadingDiv.style.display = 'block';
             fileList.appendChild(loadingDiv);
@@ -650,14 +652,12 @@ document.getElementById('file-input').addEventListener('change', async (event) =
 
             const result = await response.json();
 
-            // Hide loading animation
             loadingDiv.style.display = 'none';
 
             if (response.ok) {
                 const fileItem = document.createElement('div');
                 fileItem.className = 'file-item';
                 
-                // Convert newlines to <br> tags and preserve formatting
                 const formattedAnalysis = result.analysis.replace(/\n/g, '<br>');
                 
                 fileItem.innerHTML = `
@@ -672,7 +672,6 @@ document.getElementById('file-input').addEventListener('change', async (event) =
                 throw new Error(result.error || 'Failed to process file');
             }
         } catch (error) {
-            // Hide loading animation on error
             loadingDiv.style.display = 'none';
             console.error('Error uploading file:', error);
             alert('Error processing file: ' + error.message);
