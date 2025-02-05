@@ -24,7 +24,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger()
 
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
 app.secret_key = 'deepak'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 app.config['SESSION_TYPE'] = 'filesystem'
@@ -115,7 +115,7 @@ def recursive_rag(query, vector_store, conversation_history, iterations=4, origi
     if original_query is None:
         original_query = query
 
-    results = vector_store.similarity_search(query, k=17)
+    results = vector_store.similarity_search(query, k=15)
     if not results:
         logger.info("No results found for the query.")
         return None
@@ -227,16 +227,20 @@ def add_cache_control_headers(response):
     response.headers['Expires'] = '0'
     return response
 
-# Flask routes
 @app.route("/")
 @login_required
 def home():
+    if 'username' not in session and 'user' in session:
+        decoded_token = pyjwt.decode(session['user'].get('id_token'), options={"verify_signature": False})
+        session['username'] = decoded_token.get('sub')
+    
     username = session.get('username')
     conversation_history = load_conversation_history(username)
     session['previous_conversation_history'] = conversation_history
     logger.info(f"previous conversation histories are {conversation_history} and user id is {username}")
     clear_conversation_history(username)
     return render_template("index.html", pyjwt=pyjwt)
+
 
 
 
@@ -281,13 +285,17 @@ def chat():
             if opening_blocks % 2 != 0:
                 response += '\n```'
 
-            code_pattern = re.compile(r'```([a-zA-Z0-9]+)?(.*?)```', re.DOTALL)
+            code_pattern = re.compile(r'```(cpp|c\+\+|python|sql|javascript|bash)?(.*?)```', re.DOTALL)
             matches = code_pattern.findall(response)
             
             for language, match in matches:
                 escaped_code = html.escape(match.strip())
+                # Map c++ to cpp for Prism
+                if language in ['c++', 'cpp']:
+                    language = 'cpp'
                 wrapped_code = f'<pre><code class="language-{language or "plaintext"}">{escaped_code}</code></pre>'
                 response = response.replace(f"```{language or ''}{match}```", wrapped_code)
+
 
             
         logger.info(f"formatted response is {response}")
@@ -562,26 +570,14 @@ def format_security_analysis(analysis_result):
     """
     Helper function to format the security analysis results for display
     """
-    return f"""
-    Code Review Analysis Report
-    -------------------------
-    Time: {analysis_result['timestamp']}
-    
-    Basic Statistics:
-    - Files Changed: {analysis_result['basic_stats']['files_changed']}
-    - Lines Added: {analysis_result['basic_stats']['additions']}
-    - Lines Deleted: {analysis_result['basic_stats']['deletions']}
-    - Total Changes: {analysis_result['basic_stats']['total_changes']}
-    
+    return f"""Time: {analysis_result['timestamp']}
     Security Analysis:
-    {analysis_result['security_analysis']}
-    """
+    {analysis_result['security_analysis']}"""
 
 
 
 @app.route('/idpresponse')
 def idp_response():
-
     code = request.args.get('code')
     if code:
         payload = {
@@ -604,6 +600,8 @@ def idp_response():
             
             if id_token:
                 decoded_id_token = pyjwt.decode(id_token, options={"verify_signature": False})
+                # Set username in session here
+                session['username'] = decoded_id_token.get('sub')
             else:
                 logger.warning("No id_token found in the response")
 

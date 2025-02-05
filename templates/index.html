@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='/favicon/favicon.png') }}">
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" href="/favicon.png" type="image/png">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" rel="stylesheet" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
@@ -14,6 +14,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js"></script>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
@@ -23,6 +24,29 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+        @font-face {
+            font-family: 'Amazon Ember';
+            src: url('https://fonts.pipebytes.io/AmazonEmber_W_Rg.woff2') format('woff2'),
+                 url('https://fonts.pipebytes.io/AmazonEmber_W_Rg.woff') format('woff');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Amazon Ember';
+            src: url('https://fonts.pipebytes.io/AmazonEmber_W_Bd.woff2') format('woff2'),
+                 url('https://fonts.pipebytes.io/AmazonEmber_W_Bd.woff') format('woff');
+            font-weight: bold;
+            font-style: normal;
+        }
+
+        @font-face {
+            font-family: 'Amazon Ember';
+            src: url('https://fonts.pipebytes.io/AmazonEmber_W_Lt.woff2') format('woff2'),
+                 url('https://fonts.pipebytes.io/AmazonEmber_W_Lt.woff') format('woff');
+            font-weight: 300;
+            font-style: normal;
         }
 
         @keyframes fadeOut {
@@ -44,16 +68,21 @@ pre[class*="language-"] {
 .analysis-content {
     white-space: pre-wrap;
     font-family: monospace;
-    background-color: #1e1e1e;
-    padding: 15px;
-    border-radius: 5px;
-    margin-top: 10px;
-    max-height: 500px;
-    overflow-y: auto;
+    margin-top: 15px;
+    color: #e5e5e5;
+    line-height: 1.5;
 }
+
+
 
 .analysis-content br {
     margin-bottom: 5px;
+}
+
+.file-list:not(:empty) + .upload-interface {
+    position: static;
+    transform: none;
+    margin-top: 20px;
 }
 
 
@@ -102,9 +131,35 @@ code[class*="language-cpp"] {
     line-height: 1.5;
 }
 
+/* Add specific C++ token coloring if needed */
+.token.keyword {
+    color: #ff79c6;
+}
+
+.token.function {
+    color: #50fa7b;
+}
+
+.token.string {
+    color: #f1fa8c;
+}
+
+.token.number {
+    color: #bd93f9;
+}
+
+.token.operator {
+    color: #ff79c6;
+}
+
+.token.comment {
+    color: #6272a4;
+}
+
+
 
         body {
-            font-family: 'Open Sans', sans-serif;
+            font-family: 'Amazon Ember', sans-serif;
             background-color: #1f1f1f;
             display: flex;
             justify-content: center;
@@ -115,7 +170,7 @@ code[class*="language-cpp"] {
         }
     
         #sidebar-left {
-            width: 400px;
+            width: 200px;
             background-color: #2b2b2b;
             height: 100vh;
             position: fixed;
@@ -169,40 +224,58 @@ code[class*="language-cpp"] {
 
         #chat-container {
     position: fixed;
-    left: 400px; /* Changed from 250px to 300px to match sidebar width */
-    right: 0px; /* Changed from 250px to 0px to extend to the right edge */
+    left: 200px;
+    right: 0px;
     top: 0;
     bottom: 0;
-    display: flex;
+    display: none;
     flex-direction: column;
     height: 100vh;
     padding: 20px;
+    padding-top: 80px;
     box-sizing: border-box;
     overflow: hidden;
+    max-width: 1200px; /* Add this to limit width */
+    margin: 0 auto; /* Center the container */
 }
 
+
     
-        #logo {
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #4a90e2;
-            margin-bottom: 20px;
-        }
+#logo {
+    position: fixed;
+    font-family: 'Amazon Ember', sans-serif;
+    top: 0;
+    left: 200px; /* Same as sidebar width */
+    right: 0;
+    background-color: #1f1f1f; /* Match body background */
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #4a90e2;
+    padding: 20px;
+    z-index: 1000;
+    border-bottom: 1px solid #333;
+}
+
+
     
-        #messages {
-            flex-grow: 1;
-            overflow-y: auto;
-            border: 1px solid #444;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            background: #1e1e1e;
-            display: flex;
-            flex-direction: column;
-        }
+#messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    border: none; /* Remove the white border */
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    background: transparent; /* Remove background */
+    display: flex;
+    flex-direction: column;
+}
+
+
+
 
         .message {
             margin: 10px 0;
+            font-family: 'Amazon Ember', sans-serif;
             padding: 12px;
             border-radius: 8px;
             max-width: 75%;
@@ -267,16 +340,48 @@ code[class*="language-cpp"] {
             display: flex;
             flex-direction: row;
         }
+        .input-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background-color: #333333;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
 
-        #user-input {
-            width: calc(100% - 20px);
-            padding: 12px;
-            border: 1px solid #555;
-            border-radius: 8px;
-            background: #333333;
-            color: #e5e5e5;
-            margin-bottom: 10px;
-        }
+#user-input {
+    flex-grow: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: #e5e5e5;
+    margin-bottom: 0; /* Remove bottom margin */
+}
+
+
+.send-button {
+    background-color: #4a90e2;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s, opacity 0.3s;
+}
+
+
+.send-button:hover:not(:disabled) {
+    background-color: #357abd;
+}
+
+.send-button:disabled {
+    background-color: #888;
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
 
         #user-input:focus {
             border-color: #4a90e2;
@@ -284,23 +389,90 @@ code[class*="language-cpp"] {
             background: #444;
         }
         .clear-button {
-            background-color: #f44336;
-            color: white;
-            border: 1px solid #555;
-            padding: 12px 20px;
-            text-align: center;
-            text-decoration: none;
-            display: inline-block;
-            font-size: 16px;
-            margin-right: 10px;
-            cursor: pointer;
-            border-radius: 8px;
-            transition: background-color 0.3s, opacity 0.3s;
-        }
+    background-color: #f44336;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
 
-        .clear-button:hover:not(:disabled) {
-            background-color: #d32f2f;
-        }
+
+.clear-button:hover:not(:disabled) {
+    background-color: #d32f2f;
+}
+
+        
+        #code-review-container {
+    position: fixed;
+    left: 200px;
+    right: 0px;
+    top: 0;
+    bottom: 0;
+    display: none;
+    flex-direction: column;
+    height: 100vh;
+    padding: 20px;
+    box-sizing: border-box;
+    overflow-y: auto;
+    padding-top: 80px; /* Add padding to account for fixed header */
+}
+
+
+
+
+
+.upload-interface {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 160px); /* Adjust for header and padding */
+    width: 100%;
+}
+
+
+
+
+.file-list {
+    width: 100%;
+    margin-top: 20px;
+    max-width: 800px;
+}
+
+.file-item {
+    background-color: #2b2b2b;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.upload-button {
+    width: auto;
+    min-width: 200px;
+    padding: 15px 30px;
+    margin: 20px 0;
+}
+
+.upload-interface-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    position: relative;
+}
+
+.analysis-content {
+    background-color: #1e1e1e;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 15px;
+    white-space: pre-wrap;
+    font-family: monospace;
+    overflow-x: auto;
+    color: #e5e5e5;
+}
 
         .clear-button:disabled {
             background-color: #888;
@@ -360,12 +532,45 @@ code[class*="language-cpp"] {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+/* Add to your existing CSS */
+.nav-items {
+    margin-bottom: 20px;
+}
+
+.nav-item {
+    padding: 12px 15px;
+    margin-bottom: 8px;
+    background-color: #333;
+    border-radius: 8px;
+    font-family: 'Amazon Ember', sans-serif;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+    color: #e5e5e5;
+}
+
+.nav-item:hover {
+    background-color: #444;
+}
+
+.nav-item.active {
+    background-color: #4a90e2;
+    color: white;
+}
+
+.interface-section {
+    display: none;
+}
+
+.interface-section.active {
+    display: block;
+}
 
     #start-message {
         font-size: 2rem;
         color: #4a90e2;
         margin-bottom: 20px;
         text-align: center;
+        font-family: 'Amazon Ember', sans-serif;
         position: absolute;
         top: 50%;
         left: 50%;
@@ -378,9 +583,12 @@ code[class*="language-cpp"] {
         animation: fadeOutUp 0.5s forwards;
     }
     .upload-button {
-    width: 100%;
-    padding: 12px;
+    width: auto;
+    min-width: 200px;
+    padding: 15px 30px;
+    margin: 20px 0;
     background-color: #4a90e2;
+    font-family: 'Amazon Ember', sans-serif;
     color: white;
     border: none;
     border-radius: 8px;
@@ -388,6 +596,8 @@ code[class*="language-cpp"] {
     font-size: 1rem;
     transition: background-color 0.3s;
 }
+
+
 
 .upload-button:hover {
     background-color: #357abd;
@@ -411,38 +621,55 @@ code[class*="language-cpp"] {
     </style>    
 </head>
 <body>
+<!-- Replace the existing sidebar-left div with this -->
 <div id="sidebar-left">
-    <h3 style="font-size: 1.2rem; color: #e5e5e5; margin-bottom: 20px;">CR Test</h3>
     
-    <div class="upload-section">
-        <input type="file" id="file-input" style="display: none;" accept=".diff,.patch">
-        <button id="upload-button" class="upload-button">Upload Diff File</button>
-        <div id="file-list" class="file-list">
-        <div id="analysis-loading" style="display: none;">
-            <div class="analysis-spinner"></div>
-            <div class="loading-text">Analyzing code changes...</div>
+    <div class="nav-items">
+        <div class="nav-item active" data-target="chat-interface">
+            <span>Chat</span>
         </div>
-    </div>
+        <div class="nav-item" data-target="code-review">
+            <span>Code Review</span>
+        </div>
     </div>
 </div>
 
+
     
-    <div id="chat-container">
-        <div id="logo">DeepakGPT</div>
-        {% if 'user' in session %}
-            <div id="messages">
-                <div id="start-message"><strong>Hello {{session['username']}}, what would you like to know about Redshift?</strong></div>
+<div id="chat-container">
+    <div id="logo"><strong>DeepakGPT</strong></div>
+    {% if 'user' in session %}
+        <div id="messages">
+            <div id="start-message"><strong>Hello {{session.get('username', 'there')}}, what would you like to know about Redshift?</strong></div>
+        </div>
+        <div class="input-container">
+            <button id="clear-chat" class="clear-button">Clear</button>
+            <input type="text" id="user-input" placeholder="Type your query here..." autocomplete="off">
+            <button id="send-message" class="send-button">Send</button>
+        </div>
+    {% else %}
+        <p>Please log in to access the chatbot.</p>
+        <a href="{{ url_for('login') }}" class="auth-button">Login</a>
+    {% endif %}
+</div>
+
+
+<div id="code-review-container" style="display: none;">
+    <div id="logo">DeepakGPT</div>
+    <div class="upload-interface-wrapper">
+        <div class="upload-interface">
+            <input type="file" id="file-input" style="display: none;" accept=".diff,.patch">
+            <button id="upload-button" class="upload-button">Upload Diff File</button>
+            <div id="file-list" class="file-list">
+                <div id="analysis-loading" style="display: none;">
+                    <div class="analysis-spinner"></div>
+                    <div class="loading-text">Analyzing code changes...</div>
+                </div>
             </div>
-            <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                <button id="clear-chat" class="clear-button">Clear Chat</button>
-                <input type="text" id="user-input" placeholder="Type your query here..." autocomplete="off">
-            </div>
-            
-        {% else %}
-            <p>Please log in to access the chatbot.</p>
-            <a href="{{ url_for('login') }}" class="auth-button">Login</a>
-        {% endif %}
+        </div>
     </div>
+</div>
+
     
     <!--<div id="sidebar-right">
         <h3>Token:</h3>
@@ -471,13 +698,6 @@ code[class*="language-cpp"] {
         const connectionStatus = document.getElementById('connection-status');
         let isConnected = true;
         let isBotThinking = false;
-
-        function setClearButtonState(disabled) {
-            const clearChatButton = document.getElementById('clear-chat');
-            clearChatButton.disabled = disabled;
-            clearChatButton.style.opacity = disabled ? '0.5' : '1';
-            clearChatButton.style.cursor = disabled ? 'not-allowed' : 'pointer';
-        }
 
         function capitalizeFirstLetter(str) {
             return str.charAt(0).toUpperCase() + str.slice(1);
@@ -594,7 +814,7 @@ code[class*="language-cpp"] {
 
         const clearChatButton = document.getElementById('clear-chat');
 
-clearChatButton.addEventListener('click', async () => {
+        clearChatButton.addEventListener('click', async () => {
     if (!clearChatButton.disabled && confirm('Are you sure you want to clear the chat? This action cannot be undone.')) {
         try {
             setClearButtonState(true);
@@ -611,7 +831,9 @@ clearChatButton.addEventListener('click', async () => {
 
                 const startMessage = document.createElement('div');
                 startMessage.id = 'start-message';
-                startMessage.innerHTML = `<strong>Hello {{session.get('username')}}, what would you like to know about Redshift?</strong>`;
+                // Add fallback for username
+                const username = '{{session.get("username", "")}}' || 'there';
+                startMessage.innerHTML = `<strong>Hello ${username}, what would you like to know about Redshift?</strong>`;
                 startMessage.style.animation = 'fadeIn 0.5s forwards';
                 messagesDiv.appendChild(startMessage);
             } else {
@@ -631,6 +853,150 @@ document.getElementById('upload-button').addEventListener('click', () => {
     document.getElementById('file-input').click();
 });
 
+// Add to your existing JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    const navItems = document.querySelectorAll('.nav-item');
+    const chatContainer = document.getElementById('chat-container');
+    const codeReviewSection = document.getElementById('code-review-section');
+
+    function switchInterface(targetId) {
+    // Update nav items
+    navItems.forEach(item => {
+        item.classList.remove('active');
+        if (item.dataset.target === targetId) {
+            item.classList.add('active');
+        }
+    });
+
+    // Show/hide interfaces
+    const chatContainer = document.getElementById('chat-container');
+    const codeReviewContainer = document.getElementById('code-review-container');
+
+    if (targetId === 'chat-interface') {
+        chatContainer.style.display = 'flex';
+        codeReviewContainer.style.display = 'none';
+    } else if (targetId === 'code-review') {
+        chatContainer.style.display = 'none';
+        codeReviewContainer.style.display = 'flex';
+    }
+}
+
+
+    // Add click handlers to nav items
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            switchInterface(item.dataset.target);
+        });
+    });
+
+    // Initialize with chat interface
+    switchInterface('chat-interface');
+});
+
+// Add this after your existing event listeners
+document.getElementById('send-message').addEventListener('click', handleMessage);
+userInput.addEventListener('keypress', (event) => {
+    if (event.key === 'Enter') {
+        handleMessage();
+    }
+});
+
+// Create a function to handle sending messages
+async function handleMessage() {
+    if (isBotThinking || !isConnected) {
+        if (!isConnected) {
+            alert('Connection lost. Please try again when reconnected.');
+        }
+        return;
+    }
+
+    let userQuery = userInput.value.trim();
+    if (userQuery === '') return;
+
+    if (startMessage) {
+        startMessage.classList.add('hide');
+        setTimeout(() => {
+            startMessage.remove();
+        }, 500);                 
+    }
+
+    userQuery = capitalizeFirstLetter(userQuery);
+
+    const userMessage = document.createElement('div');
+    userMessage.className = 'message user';
+    userMessage.textContent = userQuery;
+    messagesDiv.appendChild(userMessage);
+
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    userInput.value = '';
+
+    const loadingMessage = document.createElement('div');
+    loadingMessage.className = 'message bot';
+    loadingMessage.innerHTML = '<span class="thinking-text"><div class="spinner"></div> Bot is thinking...</span>';
+    messagesDiv.appendChild(loadingMessage);
+
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+    isBotThinking = true;
+    setInputState(true);
+
+    try {
+        const response = await fetch('/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: userQuery })
+        });
+        
+        const data = await response.json();
+
+        loadingMessage.remove();
+
+        const botMessage = document.createElement('div');
+        botMessage.className = 'message bot';
+        botMessage.innerHTML = data.response || 'Sorry, I could not process your request.';
+        messagesDiv.appendChild(botMessage);
+        Prism.highlightAll(botMessage);
+
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    } catch (error) {
+        console.error('Error:', error);
+        loadingMessage.remove();
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'message bot';
+        const errorDetails = error.message || error.toString() || 'Unknown error occurred';
+        errorMessage.textContent = `Sorry, an error occurred while processing your request: ${errorDetails}`;
+        messagesDiv.appendChild(errorMessage);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    } finally {
+        isBotThinking = false;
+        setInputState(false);
+    }
+}
+
+function setInputState(disabled) {
+    const sendButton = document.getElementById('send-message');
+    const clearChatButton = document.getElementById('clear-chat');
+
+    userInput.disabled = disabled;
+    userInput.style.opacity = disabled ? '0.5' : '1';
+    userInput.placeholder = disabled ? 'Please wait for the bot to finish...' : 'Type your query here...';
+    
+    // Disable/enable both buttons
+    sendButton.disabled = disabled;
+    clearChatButton.disabled = disabled;
+    
+    // Update opacity for both buttons
+    sendButton.style.opacity = disabled ? '0.5' : '1';
+    clearChatButton.style.opacity = disabled ? '0.5' : '1';
+    
+    // Update cursor for both buttons
+    sendButton.style.cursor = disabled ? 'not-allowed' : 'pointer';
+    clearChatButton.style.cursor = disabled ? 'not-allowed' : 'pointer';
+}
+
+
+
 document.getElementById('file-input').addEventListener('change', async (event) => {
     const file = event.target.files[0];
     if (file) {
@@ -639,11 +1005,16 @@ document.getElementById('file-input').addEventListener('change', async (event) =
 
         const fileList = document.getElementById('file-list');
         const loadingDiv = document.getElementById('analysis-loading');
+        const uploadInterface = document.querySelector('.upload-interface');
         
         try {
             fileList.innerHTML = '';
             loadingDiv.style.display = 'block';
             fileList.appendChild(loadingDiv);
+            
+            // Remove centering when analysis starts
+            uploadInterface.style.position = 'static';
+            uploadInterface.style.transform = 'none';
 
             const response = await fetch('/upload-diff', {
                 method: 'POST',
@@ -661,13 +1032,17 @@ document.getElementById('file-input').addEventListener('change', async (event) =
                 const formattedAnalysis = result.analysis.replace(/\n/g, '<br>');
                 
                 fileItem.innerHTML = `
-                    <div class="file-name">${file.name}</div>
+                    <h3 class="file-name">${file.name}</h3>
                     <div class="analysis-content">
                         ${formattedAnalysis}
                     </div>
                 `;
                 
+                fileList.innerHTML = ''; // Clear the loading indicator
                 fileList.appendChild(fileItem);
+                
+                // Scroll to the analysis with smooth behavior
+                fileItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
             } else {
                 throw new Error(result.error || 'Failed to process file');
             }
@@ -675,11 +1050,13 @@ document.getElementById('file-input').addEventListener('change', async (event) =
             loadingDiv.style.display = 'none';
             console.error('Error uploading file:', error);
             alert('Error processing file: ' + error.message);
+            
+            // Reset centering if there's an error
+            uploadInterface.style.position = 'absolute';
+            uploadInterface.style.transform = 'translate(-50%, -50%)';
         }
     }
 });
-
-
 
 
     </script>
