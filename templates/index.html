@@ -14,6 +14,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js"></script>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -170,17 +171,18 @@ code[class*="language-cpp"] {
         }
     
         #sidebar-left {
-            width: 200px;
-            background-color: #2b2b2b;
-            height: 100vh;
-            position: fixed;
-            top: 0;
-            left: 0;
-            box-shadow: 2px 0px 10px rgba(0, 0, 0, 0.2);
-            padding: 20px;
-            overflow-y: auto;
-        }
-    
+    width: 200px;
+    background-color: #2b2b2b;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    box-shadow: 2px 0px 10px rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
         #sidebar-right {
             width: 250px;
             background-color: #2b2b2b;
@@ -222,7 +224,8 @@ code[class*="language-cpp"] {
             color: white;
         }
 
-        #chat-container {
+       /* Update chat container to remove top padding */
+#chat-container {
     position: fixed;
     left: 200px;
     right: 0px;
@@ -232,31 +235,48 @@ code[class*="language-cpp"] {
     flex-direction: column;
     height: 100vh;
     padding: 20px;
-    padding-top: 80px;
     box-sizing: border-box;
     overflow: hidden;
-    max-width: 1200px; /* Add this to limit width */
-    margin: 0 auto; /* Center the container */
+    max-width: 1200px;
+    margin: 0 auto;
 }
 
 
-    
-#logo {
-    position: fixed;
-    font-family: 'Amazon Ember', sans-serif;
-    top: 0;
-    left: 200px; /* Same as sidebar width */
-    right: 0;
-    background-color: #1f1f1f; /* Match body background */
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #4a90e2;
-    padding: 20px;
-    z-index: 1000;
-    border-bottom: 1px solid #333;
+
+.feedback-options {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.feedback-option {
+    background-color: #444;
+    color: #e5e5e5;
+    padding: 4px 8px;  /* Smaller padding */
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;  /* Smaller font */
+    transition: background-color 0.2s ease;
+    white-space: nowrap;  /* Prevent option text from wrapping */
 }
 
 
+.feedback-option:hover {
+    background-color: #555;
+}
+
+.feedback-option.selected {
+    background-color: #fff;
+    color: #333;
+}
+
+.feedback-option.disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    pointer-events: none;  /* This prevents hover effects */
+    background-color: #444 !important;  /* Prevent hover color change */
+}
     
 #messages {
     flex-grow: 1;
@@ -291,9 +311,10 @@ code[class*="language-cpp"] {
     color: #e5e5e5;
     align-self: flex-start;
     display: flex;
-    align-items: flex-start; /* Changed from center */
-    white-space: pre-wrap; /* Add this */
-    word-wrap: break-word; /* Add this */
+    flex-direction: column;
+    padding: 12px;
+    position: relative;
+    gap: 0;  /* Remove the gap */
 }
 
 
@@ -304,6 +325,36 @@ code[class*="language-cpp"] {
         word-wrap: break-word;       
         overflow-x: auto;            
     }
+
+    .disclaimer {
+    font-family: 'Amazon Ember', sans-serif;
+    font-size: 12px;
+    color: #8b8b8b;
+    text-align: center;
+    padding: 10px 0;
+    margin-top: 5px;
+    border-top: 1px solid #333;
+}
+.disclaimer-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+
+.policy-link {
+    color: #4a90e2;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.policy-link:hover {
+    color: #357abd;
+    text-decoration: underline;
+}
+
+
 
     .message.bot code[class*="language-"] {
         white-space: pre-wrap;      
@@ -403,8 +454,48 @@ code[class*="language-cpp"] {
     background-color: #d32f2f;
 }
 
-        
-        #code-review-container {
+#sidebar-logo {
+    color: #4a90e2;
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 10px; /* Reduced from 30px */
+    text-align: center;
+    font-family: 'Amazon Ember', sans-serif;
+    position: relative;
+    padding-bottom: 15px;
+}
+
+#sidebar-logo::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #4a90e2, transparent);
+    animation: glow 2s ease-in-out infinite;
+}
+
+#chat-container, #code-review-container {
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+    opacity: 0;
+    transform: translateX(20px);
+}
+
+#chat-container.active, #code-review-container.active {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+
+@keyframes glow {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 1; }
+}
+ 
+       /* Update code review container to remove top padding */
+#code-review-container {
     position: fixed;
     left: 200px;
     right: 0px;
@@ -416,9 +507,7 @@ code[class*="language-cpp"] {
     padding: 20px;
     box-sizing: border-box;
     overflow-y: auto;
-    padding-top: 80px; /* Add padding to account for fixed header */
 }
-
 
 
 
@@ -461,6 +550,54 @@ code[class*="language-cpp"] {
     flex-direction: column;
     flex-grow: 1;
     position: relative;
+}
+
+.feedback-section {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;  /* Add small space between message and feedback */
+    align-self: flex-start;  /* Align to the left */
+}
+
+
+.feedback-icons {
+    display: flex;
+    gap: 6px;
+    align-self: flex-start;
+}
+
+.feedback-icon {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: all 0.2s ease;
+}
+
+.feedback-options {
+    display: none;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-left: 10px;
+}
+
+
+
+.feedback-icon:hover {
+    opacity: 1;
+}
+
+.feedback-icon.selected {
+    filter: invert(1); /* This will make the entire icon white, including the inside */
+    opacity: 1;
+}
+
+.feedback-icon.disabled {
+    cursor: not-allowed;
+    opacity: 0.3;
 }
 
 .analysis-content {
@@ -532,10 +669,32 @@ code[class*="language-cpp"] {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
-/* Add to your existing CSS */
 .nav-items {
+    margin-top: 20px;  /* Add space between logo and nav items */
     margin-bottom: 20px;
 }
+
+.token-counter {
+    color: #8b8b8b;
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+.progress-bar {
+    width: 150px;
+    height: 4px;
+    background-color: #444;
+    border-radius: 2px;
+    margin-top: 5px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: #4a90e2;
+    transition: width 0.3s ease;
+}
+
 
 .nav-item {
     padding: 12px 15px;
@@ -597,6 +756,9 @@ code[class*="language-cpp"] {
     transition: background-color 0.3s;
 }
 
+.message-content {
+    margin-bottom: 8px;  /* Add space between content and feedback */
+}
 
 
 .upload-button:hover {
@@ -621,23 +783,23 @@ code[class*="language-cpp"] {
     </style>    
 </head>
 <body>
-<!-- Replace the existing sidebar-left div with this -->
-<div id="sidebar-left">
-    
-    <div class="nav-items">
-        <div class="nav-item active" data-target="chat-interface">
-            <span>Chat</span>
-        </div>
-        <div class="nav-item" data-target="code-review">
-            <span>Code Review</span>
+
+    <div id="sidebar-left">
+        <div id="sidebar-logo"><strong>DeepakGPT</strong></div>
+        <div class="nav-items">
+            <div class="nav-item active" data-target="chat-interface">
+                <span>Chat</span>
+            </div>
+            <div class="nav-item" data-target="code-review">
+                <span>Code Review</span>
+            </div>
         </div>
     </div>
-</div>
+    
 
 
     
 <div id="chat-container">
-    <div id="logo"><strong>DeepakGPT</strong></div>
     {% if 'user' in session %}
         <div id="messages">
             <div id="start-message"><strong>Hello {{session.get('username', 'there')}}, what would you like to know about Redshift?</strong></div>
@@ -647,15 +809,24 @@ code[class*="language-cpp"] {
             <input type="text" id="user-input" placeholder="Type your query here..." autocomplete="off">
             <button id="send-message" class="send-button">Send</button>
         </div>
+        <div class="disclaimer">
+            <div class="disclaimer-content">
+                <div class="token-counter">
+                    Conversation Limit: <span id="token-percentage">0</span>%
+                </div>
+                This application uses generative AI. You may need to verify responses for accuracy. 
+                <a href="https://aws.amazon.com/ai/responsible-ai/policy/" target="_blank" class="policy-link">AWS Responsible AI Policy</a>
+            </div>
+        </div>
+
     {% else %}
         <p>Please log in to access the chatbot.</p>
         <a href="{{ url_for('login') }}" class="auth-button">Login</a>
     {% endif %}
 </div>
 
-
+<!-- In your code-review-container div -->
 <div id="code-review-container" style="display: none;">
-    <div id="logo">DeepakGPT</div>
     <div class="upload-interface-wrapper">
         <div class="upload-interface">
             <input type="file" id="file-input" style="display: none;" accept=".diff,.patch">
@@ -668,7 +839,12 @@ code[class*="language-cpp"] {
             </div>
         </div>
     </div>
+    <div class="disclaimer">
+        This application uses generative AI. You may need to verify responses for accuracy. 
+        <a href="https://aws.amazon.com/ai/responsible-ai/policy/" target="_blank" class="policy-link">AWS Responsible AI Policy</a>
+    </div>
 </div>
+
 
     
     <!--<div id="sidebar-right">
@@ -702,7 +878,56 @@ code[class*="language-cpp"] {
         function capitalizeFirstLetter(str) {
             return str.charAt(0).toUpperCase() + str.slice(1);
         }
+
+        function updateTokenCounter(count) {
+    const maxTokens = 200000;
+    const percentage = ((count / maxTokens) * 100).toFixed(1);
     
+    console.log('Updating token counter:', {count, percentage});
+    
+    const percentageElement = document.getElementById('token-percentage');
+    
+    if (percentageElement) {
+        percentageElement.textContent = percentage;
+        
+        // Update color based on usage
+        const color = percentage > 90 ? '#f44336' : 
+                     percentage > 70 ? '#ff9800' : 
+                     '#4a90e2';
+        
+        percentageElement.style.color = color;
+    } else {
+        console.error('Token counter elements not found');
+    }
+}
+
+
+
+        async function submitFeedback(feedbackType, userMessage, botMessage, negativeFeedbackReason = null) {
+    try {
+        const feedbackData = {
+            feedback_type: feedbackType,
+            user_message: userMessage,
+            bot_message: botMessage,
+            negative_feedback_reason: negativeFeedbackReason
+        };
+
+        const response = await fetch('/submit-feedback', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(feedbackData)
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to submit feedback');
+        }
+    } catch (error) {
+        console.error('Error submitting feedback:', error);
+    }
+}
+
         // Health check
         function checkConnection() {
             fetch('/heartbeat')
@@ -726,7 +951,14 @@ code[class*="language-cpp"] {
         }
     
         setInterval(checkConnection, 5000);
-    
+        
+        function setClearButtonState(disabled) {
+    const clearButton = document.getElementById('clear-chat');
+    clearButton.disabled = disabled;
+    clearButton.style.opacity = disabled ? '0.5' : '1';
+    clearButton.style.cursor = disabled ? 'not-allowed' : 'pointer';
+}
+
         function setInputState(disabled) {
             userInput.disabled = disabled;
             userInput.style.opacity = disabled ? '0.5' : '1';
@@ -744,14 +976,8 @@ code[class*="language-cpp"] {
     
                 let userQuery = userInput.value.trim();
                 if (userQuery === '') return;
-    
-                if (startMessage) {
-                    startMessage.classList.add('hide');
-                    setTimeout(() => {
-                        startMessage.remove();
-                    }, 500);                 
-                }
-    
+                removeStartMessage();  // Add this line
+
                 userQuery = capitalizeFirstLetter(userQuery);
     
                 const userMessage = document.createElement('div');
@@ -781,19 +1007,89 @@ code[class*="language-cpp"] {
                     });
                     
                     const data = await response.json();
-    
+                    console.log('Response data:', data);
+                    console.log('Token count:', data.token_count);
+
+                    if (data.token_count !== undefined) {
+        updateTokenCounter(data.token_count);
+    }
+
                     loadingMessage.remove();
                    
-
-
                     const botMessage = document.createElement('div');
-                    botMessage.className = 'message bot';
-                    const formattedResponse = data.response
-                        .replace(/\n/g, '<br>')
-                        .replace(/\s{2,}/g, match => '&nbsp;'.repeat(match.length));
-                    botMessage.innerHTML = data.response || 'Sorry, I could not process your request.';
+botMessage.className = 'message bot';
+botMessage.innerHTML = `
+    <div style="white-space: pre-wrap;">${data.response || 'Sorry, I could not process your request. Please click clear chat and try again.'}</div>
+    <div style="border-top: 1px solid #333; margin: 8px 0;"></div>
+    <div class="feedback-section">
+        <div class="feedback-icons">
+            <img src="/static/icons/thumbs-up.png" alt="Thumbs Up" class="feedback-icon" data-feedback="up">
+            <img src="/static/icons/thumbs-down.png" alt="Thumbs Down" class="feedback-icon" data-feedback="down">
+        </div>
+        <div class="feedback-options">
+            <div class="feedback-option" data-reason="slow">Response too slow</div>
+            <div class="feedback-option" data-reason="incorrect">Answer was incorrect</div>
+            <div class="feedback-option" data-reason="incomplete">Answer was incomplete/cutoff</div>
+            <div class="feedback-option" data-reason="grammar">Grammar or formatting issues</div>
+            <div class="feedback-option" data-reason="error">Error message occurred</div>
+        </div>
+    </div>
+`;
+
+
+
+const feedbackIcons = botMessage.querySelectorAll('.feedback-icon');
+const feedbackOptions = botMessage.querySelector('.feedback-options');
+
+// Store the user and bot messages for feedback
+const userMessageText = userQuery;
+const botMessageText = data.response;
+
+feedbackIcons.forEach(icon => {
+    icon.addEventListener('click', function() {
+        if (this.classList.contains('disabled')) return;
+        
+        feedbackIcons.forEach(i => i.classList.remove('selected'));
+        this.classList.add('selected');
+        
+        if (this.dataset.feedback === 'down') {
+            feedbackOptions.style.display = 'flex';
+        } else {
+            feedbackOptions.style.display = 'none';
+            feedbackIcons.forEach(i => i.classList.add('disabled'));
+            // Submit positive feedback immediately
+            submitFeedback('positive', userMessageText, botMessageText);
+        }
+    });
+});
+
+// Add click handlers for the feedback options
+const options = botMessage.querySelectorAll('.feedback-option');
+options.forEach(option => {
+    option.addEventListener('click', function() {
+        if (!this.classList.contains('selected') && !this.classList.contains('disabled')) {
+            options.forEach(o => {
+                o.classList.remove('selected');
+                if (o !== this) {
+                    o.classList.add('disabled');
+                }
+            });
+            this.classList.add('selected');
+            feedbackIcons.forEach(i => i.classList.add('disabled'));
+            
+            // Submit negative feedback with reason
+            submitFeedback('negative', userMessageText, botMessageText, this.dataset.reason);
+        }
+    });
+});
+
+    
+
+
                     messagesDiv.appendChild(botMessage);
                     Prism.highlightAll(botMessage);
+
+                    // Add this part right here, after appending the message
 
                     messagesDiv.scrollTop = messagesDiv.scrollHeight;
                 } catch (error) {
@@ -802,7 +1098,7 @@ code[class*="language-cpp"] {
                     const errorMessage = document.createElement('div');
                     errorMessage.className = 'message bot';
                     const errorDetails = error.message || error.toString() || 'Unknown error occurred';
-                    errorMessage.textContent = `Sorry, an error occurred while processing your request: ${errorDetails}`;
+                    errorMessage.textContent = `Sorry, an error occurred while processing your request: ${errorDetails}, Please clear chat and try again.`;
                     messagesDiv.appendChild(errorMessage);
                     messagesDiv.scrollTop = messagesDiv.scrollHeight;
                 } finally {
@@ -818,30 +1114,40 @@ code[class*="language-cpp"] {
     if (!clearChatButton.disabled && confirm('Are you sure you want to clear the chat? This action cannot be undone.')) {
         try {
             setClearButtonState(true);
-            const response = await fetch('/clear-chat', { method: 'POST' });
+            const response = await fetch('/clear-chat', { 
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin'
+            });
+            
+            const data = await response.json();
+
             if (response.ok) {
                 const messages = messagesDiv.children;
-                for (let i = 0; i < messages.length; i++) {
-                    messages[i].style.animation = 'fadeOut 0.5s forwards';
-                }
+                Array.from(messages).forEach(message => {
+                    message.style.animation = 'fadeOut 0.5s forwards';
+                });
 
                 await new Promise(resolve => setTimeout(resolve, 500));
-
                 messagesDiv.innerHTML = '';
+
+                // Add this line here
+                updateTokenCounter(0);
 
                 const startMessage = document.createElement('div');
                 startMessage.id = 'start-message';
-                // Add fallback for username
                 const username = '{{session.get("username", "")}}' || 'there';
                 startMessage.innerHTML = `<strong>Hello ${username}, what would you like to know about Redshift?</strong>`;
                 startMessage.style.animation = 'fadeIn 0.5s forwards';
                 messagesDiv.appendChild(startMessage);
             } else {
-                throw new Error('Failed to clear chat');
+                throw new Error(data.error || 'Failed to clear chat');
             }
         } catch (error) {
             console.error('Error clearing chat:', error);
-            alert('Failed to clear chat. Please try again.');
+            alert('Failed to clear chat: ' + error.message);
         } finally {
             setClearButtonState(false);
         }
@@ -849,51 +1155,58 @@ code[class*="language-cpp"] {
 });
 
 
+
 document.getElementById('upload-button').addEventListener('click', () => {
     document.getElementById('file-input').click();
 });
 
-// Add to your existing JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     const navItems = document.querySelectorAll('.nav-item');
     const chatContainer = document.getElementById('chat-container');
     const codeReviewSection = document.getElementById('code-review-section');
 
     function switchInterface(targetId) {
-    // Update nav items
     navItems.forEach(item => {
         item.classList.remove('active');
         if (item.dataset.target === targetId) {
             item.classList.add('active');
         }
     });
-
-    // Show/hide interfaces
+    
     const chatContainer = document.getElementById('chat-container');
     const codeReviewContainer = document.getElementById('code-review-container');
 
-    if (targetId === 'chat-interface') {
-        chatContainer.style.display = 'flex';
-        codeReviewContainer.style.display = 'none';
-    } else if (targetId === 'code-review') {
-        chatContainer.style.display = 'none';
-        codeReviewContainer.style.display = 'flex';
-    }
+    // First, remove active class and wait for animation
+    chatContainer.classList.remove('active');
+    codeReviewContainer.classList.remove('active');
+
+    setTimeout(() => {
+        if (targetId === 'chat-interface') {
+            chatContainer.style.display = 'flex';
+            codeReviewContainer.style.display = 'none';
+            // Trigger reflow
+            void chatContainer.offsetWidth;
+            chatContainer.classList.add('active');
+        } else if (targetId === 'code-review') {
+            chatContainer.style.display = 'none';
+            codeReviewContainer.style.display = 'flex';
+            // Trigger reflow
+            void codeReviewContainer.offsetWidth;
+            codeReviewContainer.classList.add('active');
+        }
+    }, 200); // Match this with your CSS transition duration
 }
 
 
-    // Add click handlers to nav items
     navItems.forEach(item => {
         item.addEventListener('click', () => {
             switchInterface(item.dataset.target);
         });
     });
 
-    // Initialize with chat interface
     switchInterface('chat-interface');
 });
 
-// Add this after your existing event listeners
 document.getElementById('send-message').addEventListener('click', handleMessage);
 userInput.addEventListener('keypress', (event) => {
     if (event.key === 'Enter') {
@@ -901,7 +1214,6 @@ userInput.addEventListener('keypress', (event) => {
     }
 });
 
-// Create a function to handle sending messages
 async function handleMessage() {
     if (isBotThinking || !isConnected) {
         if (!isConnected) {
@@ -912,12 +1224,15 @@ async function handleMessage() {
 
     let userQuery = userInput.value.trim();
     if (userQuery === '') return;
+    removeStartMessage();  // Add this line
 
+    // Update this section
+    const startMessage = document.getElementById('start-message');
     if (startMessage) {
         startMessage.classList.add('hide');
-        setTimeout(() => {
+        startMessage.addEventListener('animationend', () => {
             startMessage.remove();
-        }, 500);                 
+        });
     }
 
     userQuery = capitalizeFirstLetter(userQuery);
@@ -942,21 +1257,100 @@ async function handleMessage() {
     setInputState(true);
 
     try {
-        const response = await fetch('/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: userQuery })
-        });
-        
-        const data = await response.json();
+    const response = await fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: userQuery })
+    });
+    
+    const data = await response.json();
+    console.log('Full response data:', data); // Add this line
+    loadingMessage.remove();
 
-        loadingMessage.remove();
+    // Add debugging for token counter
+    console.log('Token count from response:', data.token_count); // Add this line
+    
+    if (data.token_count !== undefined) {
+        console.log('Updating token counter to:', data.token_count); // Add this line
+        updateTokenCounter(data.token_count);
+    } else {
+        console.log('No token count in response'); // Add this line
+    }
+
+
 
         const botMessage = document.createElement('div');
-        botMessage.className = 'message bot';
-        botMessage.innerHTML = data.response || 'Sorry, I could not process your request.';
-        messagesDiv.appendChild(botMessage);
-        Prism.highlightAll(botMessage);
+botMessage.className = 'message bot';
+botMessage.innerHTML = `
+    <div style="white-space: pre-wrap;">${data.response || 'Sorry, I could not process your request. Please click clear chat and try again.'}</div>
+    <div style="border-top: 1px solid #333; margin: 8px 0;"></div>
+    <div class="feedback-section">
+        <div class="feedback-icons">
+            <img src="/static/icons/thumbs-up.png" alt="Thumbs Up" class="feedback-icon" data-feedback="up">
+            <img src="/static/icons/thumbs-down.png" alt="Thumbs Down" class="feedback-icon" data-feedback="down">
+        </div>
+        <div class="feedback-options">
+            <div class="feedback-option" data-reason="slow">Response too slow</div>
+            <div class="feedback-option" data-reason="incorrect">Answer was incorrect</div>
+            <div class="feedback-option" data-reason="incomplete">Answer was incomplete/cutoff</div>
+            <div class="feedback-option" data-reason="grammar">Grammar or formatting issues</div>
+            <div class="feedback-option" data-reason="error">Error message occurred</div>
+        </div>
+    </div>
+`;
+
+
+const feedbackIcons = botMessage.querySelectorAll('.feedback-icon');
+const feedbackOptions = botMessage.querySelector('.feedback-options');
+
+// Store the user and bot messages for feedback
+const userMessageText = userQuery;
+const botMessageText = data.response;
+
+feedbackIcons.forEach(icon => {
+    icon.addEventListener('click', function() {
+        if (this.classList.contains('disabled')) return;
+        
+        feedbackIcons.forEach(i => i.classList.remove('selected'));
+        this.classList.add('selected');
+        
+        if (this.dataset.feedback === 'down') {
+            feedbackOptions.style.display = 'flex';
+        } else {
+            feedbackOptions.style.display = 'none';
+            feedbackIcons.forEach(i => i.classList.add('disabled'));
+            // Submit positive feedback immediately
+            submitFeedback('positive', userMessageText, botMessageText);
+        }
+    });
+});
+
+// Add click handlers for the feedback options
+const options = botMessage.querySelectorAll('.feedback-option');
+options.forEach(option => {
+    option.addEventListener('click', function() {
+        if (!this.classList.contains('selected') && !this.classList.contains('disabled')) {
+            options.forEach(o => {
+                o.classList.remove('selected');
+                if (o !== this) {
+                    o.classList.add('disabled');
+                }
+            });
+            this.classList.add('selected');
+            feedbackIcons.forEach(i => i.classList.add('disabled'));
+            
+            // Submit negative feedback with reason
+            submitFeedback('negative', userMessageText, botMessageText, this.dataset.reason);
+        }
+    });
+});
+
+    
+
+
+messagesDiv.appendChild(botMessage);
+Prism.highlightAll(botMessage);
+
 
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
     } catch (error) {
@@ -965,7 +1359,7 @@ async function handleMessage() {
         const errorMessage = document.createElement('div');
         errorMessage.className = 'message bot';
         const errorDetails = error.message || error.toString() || 'Unknown error occurred';
-        errorMessage.textContent = `Sorry, an error occurred while processing your request: ${errorDetails}`;
+        errorMessage.textContent = `Sorry, an error occurred while processing your request: ${errorDetails}, Please clear chat and try again.`;
         messagesDiv.appendChild(errorMessage);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
     } finally {
@@ -982,20 +1376,27 @@ function setInputState(disabled) {
     userInput.style.opacity = disabled ? '0.5' : '1';
     userInput.placeholder = disabled ? 'Please wait for the bot to finish...' : 'Type your query here...';
     
-    // Disable/enable both buttons
     sendButton.disabled = disabled;
     clearChatButton.disabled = disabled;
     
-    // Update opacity for both buttons
     sendButton.style.opacity = disabled ? '0.5' : '1';
     clearChatButton.style.opacity = disabled ? '0.5' : '1';
     
-    // Update cursor for both buttons
     sendButton.style.cursor = disabled ? 'not-allowed' : 'pointer';
     clearChatButton.style.cursor = disabled ? 'not-allowed' : 'pointer';
 }
 
+function removeStartMessage() {
+    const startMsg = document.getElementById('start-message');
+    if (startMsg) {
+        startMsg.classList.add('hide');
+        setTimeout(() => {
+            startMsg.remove();
+        }, 500);
+    }
+}
 
+    
 
 document.getElementById('file-input').addEventListener('change', async (event) => {
     const file = event.target.files[0];
@@ -1012,7 +1413,6 @@ document.getElementById('file-input').addEventListener('change', async (event) =
             loadingDiv.style.display = 'block';
             fileList.appendChild(loadingDiv);
             
-            // Remove centering when analysis starts
             uploadInterface.style.position = 'static';
             uploadInterface.style.transform = 'none';
 
@@ -1038,10 +1438,9 @@ document.getElementById('file-input').addEventListener('change', async (event) =
                     </div>
                 `;
                 
-                fileList.innerHTML = ''; // Clear the loading indicator
+                fileList.innerHTML = ''; 
                 fileList.appendChild(fileItem);
                 
-                // Scroll to the analysis with smooth behavior
                 fileItem.scrollIntoView({ behavior: 'smooth', block: 'start' });
             } else {
                 throw new Error(result.error || 'Failed to process file');
@@ -1051,7 +1450,6 @@ document.getElementById('file-input').addEventListener('change', async (event) =
             console.error('Error uploading file:', error);
             alert('Error processing file: ' + error.message);
             
-            // Reset centering if there's an error
             uploadInterface.style.position = 'absolute';
             uploadInterface.style.transform = 'translate(-50%, -50%)';
         }
@@ -1060,8 +1458,11 @@ document.getElementById('file-input').addEventListener('change', async (event) =
 
 
     </script>
+        
     
 {% endif %}
 
 </body>
 </html>
+
+

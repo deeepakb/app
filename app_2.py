@@ -22,6 +22,7 @@ from datetime import datetime
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
+bedrock = boto3.client('bedrock-runtime', region_name='us-west-2')
 
 
 app = Flask(__name__, static_folder='static')
@@ -59,6 +60,13 @@ def clear_conversation_history(username):
         logger.info(f"Conversation history cleared for user: {username}")
     except Exception as e:
         logger.error(f"Error clearing conversation history for user {username}: {e}")
+
+#Add at the top with your imports
+import tiktoken
+tokenizer = tiktoken.get_encoding("cl100k_base")
+
+def count_tokens(text: str) -> int:
+    return len(tokenizer.encode(text))
 
 
 def load_conversation_history(username):
@@ -107,7 +115,7 @@ def append_conversation_history(username, new_messages):
         logger.error(f"Error saving conversation history for user {username}: {e}")
 
 
-# Recursive RAG function
+# Recursive RAG
 def recursive_rag(query, vector_store, conversation_history, iterations=4, original_query=None):
     if iterations <= 0:
         return None
@@ -119,31 +127,23 @@ def recursive_rag(query, vector_store, conversation_history, iterations=4, origi
     if not results:
         logger.info("No results found for the query.")
         return None
-
-    file_groups = defaultdict(list)
+    
+    seen_content = set()
+    deduplicated_chunks = []
+    
     for chunk in results:
-        file_path = chunk.metadata.get('file_path', '')
-        file_name = os.path.basename(file_path)
-        file_groups[file_name].append(chunk)
-
-    sorted_deduplicated_chunks = []
-    for file_name, chunks in file_groups.items():
-        sorted_file_chunks = sorted(chunks, key=lambda x: int(x.metadata.get("id", "9999")))
-        deduplicated_file_chunks = []
-        seen_content = set()
-        for chunk in sorted_file_chunks:
-            chunk_content = chunk.page_content.strip()
-            if chunk_content not in seen_content:
-                deduplicated_file_chunks.append(chunk)
-                seen_content.add(chunk_content)
-        sorted_deduplicated_chunks.extend(deduplicated_file_chunks)
+        chunk_content = chunk.page_content.strip()
+        if chunk_content not in seen_content:
+            deduplicated_chunks.append(chunk)
+            seen_content.add(chunk_content)
 
     full_content = ""
-    for chunk in sorted_deduplicated_chunks:
+    for chunk in deduplicated_chunks:
         full_content += f"File: {os.path.basename(chunk.metadata.get('file_path', 'Unknown'))}\n"
         full_content += f"Chunk ID : {chunk.metadata.values}\n"
         full_content += chunk.page_content.strip() + "\n\n"
     full_content = re.sub(r'\n{3,}', '\n\n', full_content).strip()
+
 
     prompt_info = (
     "You are a bot designed to assist engineers working on the Amazon Redshift database. Your responses should appear as if you possess all necessary knowledge by default, without referencing or revealing any internal processes, including code snippets.\n\n"
@@ -179,7 +179,6 @@ def recursive_rag(query, vector_store, conversation_history, iterations=4, origi
         })
     }
 
-    bedrock = boto3.client('bedrock-runtime')
     #time.sleep(1)
     #logger.info(f"\nMessages is {messages} and its size is {len(messages)}\n")
     response = bedrock.invoke_model(**kwargs)
@@ -290,7 +289,6 @@ def chat():
             
             for language, match in matches:
                 escaped_code = html.escape(match.strip())
-                # Map c++ to cpp for Prism
                 if language in ['c++', 'cpp']:
                     language = 'cpp'
                 wrapped_code = f'<pre><code class="language-{language or "plaintext"}">{escaped_code}</code></pre>'
@@ -300,14 +298,89 @@ def chat():
             
         logger.info(f"formatted response is {response}")
 
+        user_tokens = count_tokens(user_query)
+        bot_tokens = count_tokens(response)
+        total_tokens = user_tokens + bot_tokens
+        
+        # Get current token count from S3 or create new
+        try:
+            token_count = s3_client.get_object(
+                Bucket=conversation_history_bucket,
+                Key=f"{username}/token_count.json"
+            )
+            current_count = json.loads(token_count['Body'].read().decode('utf-8'))['count']
+        except:
+            current_count = 0
+        
+        # Update total token count
+        new_count = current_count + total_tokens
+        
+        # Save the new count to S3
+        s3_client.put_object(
+            Bucket=conversation_history_bucket,
+            Key=f"{username}/token_count.json",
+            Body=json.dumps({'count': new_count}),
+            ContentType='application/json'
+        )
+        logger.info(f"Sending response with token count: {new_count}")  
         return jsonify({
-            "response": response})
+            "response": response,
+            "token_count": new_count  # Include the token count in the response
+        })
 
     except Exception as e:
         logger.error(f"Error during chat processing: {e}")
         return jsonify({"error": str(e)}), 500
 
 
+
+@app.route('/submit-feedback', methods=['POST'])
+@login_required
+def submit_feedback():
+    try:
+        feedback_data = request.json
+        username = session.get('username')
+        timestamp = datetime.now().isoformat()
+        
+        # Create the feedback object
+        feedback_object = {
+            'timestamp': timestamp,
+            'username': username,
+            'user_message': feedback_data.get('user_message'),
+            'bot_message': feedback_data.get('bot_message'),
+            'feedback_type': feedback_data.get('feedback_type'),
+            'negative_feedback_reason': feedback_data.get('negative_feedback_reason', None)
+        }
+
+        # Determine which file to write to based on feedback type
+        file_key = f"feedback/{'positive_feedback.json' if feedback_data['feedback_type'] == 'positive' else 'negative_feedback.json'}"
+        
+        try:
+            # Try to get existing feedback
+            existing_feedback = s3_client.get_object(
+                Bucket=conversation_history_bucket,
+                Key=file_key
+            )
+            feedback_list = json.loads(existing_feedback['Body'].read().decode('utf-8'))
+        except s3_client.exceptions.NoSuchKey:
+            feedback_list = []
+
+        # Add new feedback
+        feedback_list.append(feedback_object)
+
+        # Save updated feedback
+        s3_client.put_object(
+            Bucket=conversation_history_bucket,
+            Key=file_key,
+            Body=json.dumps(feedback_list, indent=2),
+            ContentType='application/json'
+        )
+
+        return jsonify({'status': 'success'}), 200
+
+    except Exception as e:
+        logger.error(f"Error saving feedback: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/heartbeat')
@@ -320,10 +393,20 @@ def clear_chat():
     try:
         username = session.get('username')
         clear_conversation_history(username)
+        
+        # Reset token count
+        s3_client.put_object(
+            Bucket=conversation_history_bucket,
+            Key=f"{username}/token_count.json",
+            Body=json.dumps({'count': 0}),
+            ContentType='application/json'
+        )
+        
         return jsonify({"message": "Chat cleared successfully"}), 200
     except Exception as e:
         logger.error(f"Error clearing chat: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 
 @app.route('/login')
@@ -600,7 +683,6 @@ def idp_response():
             
             if id_token:
                 decoded_id_token = pyjwt.decode(id_token, options={"verify_signature": False})
-                # Set username in session here
                 session['username'] = decoded_id_token.get('sub')
             else:
                 logger.warning("No id_token found in the response")
