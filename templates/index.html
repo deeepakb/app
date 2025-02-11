@@ -561,6 +561,34 @@ code[class*="language-cpp"] {
     align-self: flex-start;  /* Align to the left */
 }
 
+.quip-link-container {
+    margin-top: auto;
+    padding: 20px 0;
+    border-top: 1px solid #444;
+}
+
+.quip-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #e5e5e5;
+    text-decoration: none;
+    padding: 10px 15px;
+    border-radius: 8px;
+    transition: background-color 0.3s;
+    font-size: 0.9rem;
+}
+
+.quip-link:hover {
+    background-color: #444;
+}
+
+.quip-icon {
+    width: 16px;
+    height: 16px;
+    opacity: 0.8;
+}
+
 
 .feedback-icons {
     display: flex;
@@ -778,6 +806,19 @@ code[class*="language-cpp"] {
     font-size: 0.9rem;
     word-break: break-all;
 }
+#sidebar-left {
+    width: 200px;
+    background-color: #2b2b2b;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    box-shadow: 2px 0px 10px rgba(0, 0, 0, 0.2);
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
 
 
     </style>    
@@ -793,6 +834,11 @@ code[class*="language-cpp"] {
             <div class="nav-item" data-target="code-review">
                 <span>Code Review</span>
             </div>
+        </div>
+        <div class="quip-link-container">
+            <a href="https://quip-amazon.com/llcDAX6iABjk/Project-Feedback" target="_blank" class="quip-link">
+                Feedback Form
+            </a>
         </div>
     </div>
     
@@ -1063,7 +1109,6 @@ feedbackIcons.forEach(icon => {
     });
 });
 
-// Add click handlers for the feedback options
 const options = botMessage.querySelectorAll('.feedback-option');
 options.forEach(option => {
     option.addEventListener('click', function() {
@@ -1077,7 +1122,6 @@ options.forEach(option => {
             this.classList.add('selected');
             feedbackIcons.forEach(i => i.classList.add('disabled'));
             
-            // Submit negative feedback with reason
             submitFeedback('negative', userMessageText, botMessageText, this.dataset.reason);
         }
     });
@@ -1089,7 +1133,6 @@ options.forEach(option => {
                     messagesDiv.appendChild(botMessage);
                     Prism.highlightAll(botMessage);
 
-                    // Add this part right here, after appending the message
 
                     messagesDiv.scrollTop = messagesDiv.scrollHeight;
                 } catch (error) {
@@ -1133,7 +1176,6 @@ options.forEach(option => {
                 await new Promise(resolve => setTimeout(resolve, 500));
                 messagesDiv.innerHTML = '';
 
-                // Add this line here
                 updateTokenCounter(0);
 
                 const startMessage = document.createElement('div');
@@ -1176,7 +1218,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const chatContainer = document.getElementById('chat-container');
     const codeReviewContainer = document.getElementById('code-review-container');
 
-    // First, remove active class and wait for animation
     chatContainer.classList.remove('active');
     codeReviewContainer.classList.remove('active');
 
@@ -1184,17 +1225,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (targetId === 'chat-interface') {
             chatContainer.style.display = 'flex';
             codeReviewContainer.style.display = 'none';
-            // Trigger reflow
             void chatContainer.offsetWidth;
             chatContainer.classList.add('active');
         } else if (targetId === 'code-review') {
             chatContainer.style.display = 'none';
             codeReviewContainer.style.display = 'flex';
-            // Trigger reflow
             void codeReviewContainer.offsetWidth;
             codeReviewContainer.classList.add('active');
         }
-    }, 200); // Match this with your CSS transition duration
+    }, 200);
 }
 
 
@@ -1224,9 +1263,8 @@ async function handleMessage() {
 
     let userQuery = userInput.value.trim();
     if (userQuery === '') return;
-    removeStartMessage();  // Add this line
+    removeStartMessage();  
 
-    // Update this section
     const startMessage = document.getElementById('start-message');
     if (startMessage) {
         startMessage.classList.add('hide');
@@ -1264,17 +1302,16 @@ async function handleMessage() {
     });
     
     const data = await response.json();
-    console.log('Full response data:', data); // Add this line
+    console.log('Full response data:', data); 
     loadingMessage.remove();
 
-    // Add debugging for token counter
-    console.log('Token count from response:', data.token_count); // Add this line
+    console.log('Token count from response:', data.token_count);
     
     if (data.token_count !== undefined) {
-        console.log('Updating token counter to:', data.token_count); // Add this line
+        console.log('Updating token counter to:', data.token_count); 
         updateTokenCounter(data.token_count);
     } else {
-        console.log('No token count in response'); // Add this line
+        console.log('No token count in response');
     }
 
 
@@ -1303,7 +1340,6 @@ botMessage.innerHTML = `
 const feedbackIcons = botMessage.querySelectorAll('.feedback-icon');
 const feedbackOptions = botMessage.querySelector('.feedback-options');
 
-// Store the user and bot messages for feedback
 const userMessageText = userQuery;
 const botMessageText = data.response;
 
@@ -1319,13 +1355,11 @@ feedbackIcons.forEach(icon => {
         } else {
             feedbackOptions.style.display = 'none';
             feedbackIcons.forEach(i => i.classList.add('disabled'));
-            // Submit positive feedback immediately
             submitFeedback('positive', userMessageText, botMessageText);
         }
     });
 });
 
-// Add click handlers for the feedback options
 const options = botMessage.querySelectorAll('.feedback-option');
 options.forEach(option => {
     option.addEventListener('click', function() {
@@ -1339,7 +1373,6 @@ options.forEach(option => {
             this.classList.add('selected');
             feedbackIcons.forEach(i => i.classList.add('disabled'));
             
-            // Submit negative feedback with reason
             submitFeedback('negative', userMessageText, botMessageText, this.dataset.reason);
         }
     });

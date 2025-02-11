@@ -61,7 +61,6 @@ def clear_conversation_history(username):
     except Exception as e:
         logger.error(f"Error clearing conversation history for user {username}: {e}")
 
-#Add at the top with your imports
 import tiktoken
 tokenizer = tiktoken.get_encoding("cl100k_base")
 
