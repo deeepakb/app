@@ -19,12 +19,15 @@ from html import escape
 import html
 import uuid
 from datetime import datetime
+import tiktoken
 
+#Logging Setup
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
 bedrock = boto3.client('bedrock-runtime', region_name='us-west-2')
 
 
+#Flask App Setup
 app = Flask(__name__, static_folder='static')
 app.secret_key = 'deepak'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
@@ -36,17 +39,21 @@ REDIRECT_URI = 'http://elb-1340525831.us-west-2.elb.amazonaws.com/idpresponse'
 CLIENT_ID = 'deepak_chatbot'
 CLIENT_SECRET = 'lB7NfuttFSgAQjkOa2Jv9P0jMpObJRuZkmN98z70SaSN'
 
+tokenizer = tiktoken.get_encoding("cl100k_base") #For getting Token Count
+
+#S3 Setup
 s3_client = boto3.client('s3')
 conversation_history = 'conversation-history-deepak' 
-
 client = boto3.client('s3')
+conversation_history_bucket = 'conversation-history-deepak'
 
+#Gets User ID
 def get_user_id():
     session['username'] = pyjwt.decode(session['user'].get('id_token'), options={"verify_signature": False}).get('sub')
     return pyjwt.decode(session['user'].get('id_token'), options={"verify_signature": False}).get('sub')
 
-conversation_history_bucket = 'conversation-history-deepak'
 
+#Clear Conversation History
 def clear_conversation_history(username):
     try:
         empty_history = []
@@ -61,13 +68,11 @@ def clear_conversation_history(username):
     except Exception as e:
         logger.error(f"Error clearing conversation history for user {username}: {e}")
 
-import tiktoken
-tokenizer = tiktoken.get_encoding("cl100k_base")
-
+#Conversation Token Counter
 def count_tokens(text: str) -> int:
     return len(tokenizer.encode(text))
 
-
+#Load Conversation History
 def load_conversation_history(username):
     try:
         s3_object = s3_client.get_object(Bucket=conversation_history_bucket, Key=f"{username}/conversation_history.json")
@@ -79,6 +84,7 @@ def load_conversation_history(username):
         logger.error(f"Error loading conversation history: {e}")
         return []
 
+#Save Conversation History
 def save_conversation_history(username, history):
     try:
         s3_client.put_object(
@@ -90,6 +96,7 @@ def save_conversation_history(username, history):
     except Exception as e:
         logger.error(f"Error saving conversation history: {e}")
 
+#Append to Conversation History
 def append_conversation_history(username, new_messages):
     try:
         try:
@@ -122,11 +129,14 @@ def recursive_rag(query, vector_store, conversation_history, iterations=4, origi
     if original_query is None:
         original_query = query
 
+    #Similarity Search
     results = vector_store.similarity_search(query, k=15)
+
     if not results:
         logger.info("No results found for the query.")
         return None
     
+    #Process Retrieved Chunks
     seen_content = set()
     deduplicated_chunks = []
     
@@ -143,7 +153,7 @@ def recursive_rag(query, vector_store, conversation_history, iterations=4, origi
         full_content += chunk.page_content.strip() + "\n\n"
     full_content = re.sub(r'\n{3,}', '\n\n', full_content).strip()
 
-
+    #Prompt Information for the Model
     prompt_info = (
     "You are a bot designed to assist engineers working on the Amazon Redshift database. Your responses should appear as if you possess all necessary knowledge by default, without referencing or revealing any internal processes, including code snippets.\n\n"
     "Guidelines:\n"
@@ -206,6 +216,7 @@ embeddings = HuggingFaceEmbeddings(
     model_kwargs={'device': "cpu"},
     encode_kwargs={"batch_size": 131072}
 )
+
 index_path = "/home/ec2-user/internProject/app/faiss_index_final_improved_3"
 vector_store = FAISS.load_local(index_path, embeddings, allow_dangerous_deserialization=True)
 logger.info("FAISS index loaded successfully.")
@@ -225,6 +236,7 @@ def add_cache_control_headers(response):
     response.headers['Expires'] = '0'
     return response
 
+#Home Page
 @app.route("/")
 @login_required
 def home():
@@ -241,7 +253,7 @@ def home():
 
 
 
-
+#Chat Function
 @app.route("/chat", methods=["POST"])
 @login_required
 def chat():
@@ -265,6 +277,7 @@ def chat():
 
         conversation_history = load_conversation_history(username)
 
+        #Only Keep Last Iteration of Recursion
         if len(conversation_history) >= 8:
             preserved_history = conversation_history[:-8]
             last_pair = conversation_history[-2:]
@@ -275,7 +288,7 @@ def chat():
         if isinstance(response, list):
             response = response[-1:] 
 
-
+        #Handle Code Outputs
         if isinstance(response, str):
             import re
             opening_blocks = response.count('```')
@@ -296,12 +309,11 @@ def chat():
 
             
         logger.info(f"formatted response is {response}")
-
+    
         user_tokens = count_tokens(user_query)
         bot_tokens = count_tokens(response)
         total_tokens = user_tokens + bot_tokens
         
-        # Get current token count from S3 or create new
         try:
             token_count = s3_client.get_object(
                 Bucket=conversation_history_bucket,
@@ -311,7 +323,6 @@ def chat():
         except:
             current_count = 0
         
-        # Update total token count
         new_count = current_count + total_tokens
         
         # Save the new count to S3
@@ -324,7 +335,7 @@ def chat():
         logger.info(f"Sending response with token count: {new_count}")  
         return jsonify({
             "response": response,
-            "token_count": new_count  # Include the token count in the response
+            "token_count": new_count
         })
 
     except Exception as e:
@@ -332,7 +343,7 @@ def chat():
         return jsonify({"error": str(e)}), 500
 
 
-
+#Message Feedback Handling
 @app.route('/submit-feedback', methods=['POST'])
 @login_required
 def submit_feedback():
@@ -341,7 +352,6 @@ def submit_feedback():
         username = session.get('username')
         timestamp = datetime.now().isoformat()
         
-        # Create the feedback object
         feedback_object = {
             'timestamp': timestamp,
             'username': username,
@@ -351,11 +361,9 @@ def submit_feedback():
             'negative_feedback_reason': feedback_data.get('negative_feedback_reason', None)
         }
 
-        # Determine which file to write to based on feedback type
         file_key = f"feedback/{'positive_feedback.json' if feedback_data['feedback_type'] == 'positive' else 'negative_feedback.json'}"
         
         try:
-            # Try to get existing feedback
             existing_feedback = s3_client.get_object(
                 Bucket=conversation_history_bucket,
                 Key=file_key
@@ -364,10 +372,8 @@ def submit_feedback():
         except s3_client.exceptions.NoSuchKey:
             feedback_list = []
 
-        # Add new feedback
         feedback_list.append(feedback_object)
 
-        # Save updated feedback
         s3_client.put_object(
             Bucket=conversation_history_bucket,
             Key=file_key,
@@ -382,10 +388,12 @@ def submit_feedback():
         return jsonify({'error': str(e)}), 500
 
 
+#Health Check
 @app.route('/heartbeat')
 def heartbeat():
     return 'OK', 200
 
+#Clear Chat Function
 @app.route('/clear-chat', methods=['POST'])
 @login_required
 def clear_chat():
@@ -393,7 +401,6 @@ def clear_chat():
         username = session.get('username')
         clear_conversation_history(username)
         
-        # Reset token count
         s3_client.put_object(
             Bucket=conversation_history_bucket,
             Key=f"{username}/token_count.json",
@@ -407,7 +414,7 @@ def clear_chat():
         return jsonify({"error": str(e)}), 500
 
 
-
+#Login Handling
 @app.route('/login')
 def login():
     if 'user' in session:
@@ -424,6 +431,7 @@ def login():
     url = f'{AMAZON_FEDERATE_URL}/api/oauth2/v1/authorize'
     return redirect(f'{url}?{requests.compat.urlencode(query_params)}')
 
+#Upload Diff File
 @app.route('/upload-diff', methods=['POST'])
 @login_required
 def upload_diff():
@@ -454,6 +462,7 @@ def upload_diff():
         logger.error(f"Error processing diff file: {e}")
         return jsonify({'error': str(e)}), 500
 
+#Process Diff File for CR
 def process_diff_content(diff_content):
     """
     Process the diff content using Claude LLM with RAG to analyze security concerns and code review validity
@@ -493,6 +502,7 @@ def process_diff_content(diff_content):
             similar_content += chunk.page_content.strip() + "\n\n"
         similar_content = re.sub(r'\n{3,}', '\n\n', similar_content).strip()
 
+        #Prompt Info to Analyze Diff File
         security_prompt = """
             You are a senior security engineer reviewing code changes across multiple languages (Python, JavaScript, C++). Analyze the following for potential security issues and code quality concerns.
 
@@ -657,7 +667,7 @@ def format_security_analysis(analysis_result):
     {analysis_result['security_analysis']}"""
 
 
-
+#Handles Midway Authentication
 @app.route('/idpresponse')
 def idp_response():
     code = request.args.get('code')
@@ -699,6 +709,7 @@ def idp_response():
             return jsonify({'error': 'Failed to get token', 'status_code': response.status_code}), 400
     else:
         return jsonify({'error': 'No authorization code received'}), 400
+
 
 @app.route('/logout', methods=['GET', 'POST'])
 def logout():

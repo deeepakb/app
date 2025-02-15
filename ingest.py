@@ -1,33 +1,39 @@
+# System and utility imports
 import boto3
 import json
 import os
 import gc
 import logging
 import threading
-from langchain_huggingface import HuggingFaceEmbeddings
 import time
+import sys  # Missing
+import uuid
+import fnmatch
+import multiprocessing
+import concurrent.futures
+import queue  # Missing
+from logging.handlers import QueueHandler, QueueListener
+
+# Machine learning and data processing imports
 import faiss
-from langchain_ollama import OllamaEmbeddings
-from langchain.text_splitter import Language  # Import Language enum for supported languages
+import numpy as np  # Missing (might be needed for some operations)
+
+# Langchain imports
+from langchain_community.embeddings import HuggingFaceEmbeddings  # Updated path
+from langchain.text_splitter import Language 
 from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_community.vectorstores import FAISS
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.text_splitter import TextSplitter
+
+# Llama index imports
 from llama_index.core import SimpleDirectoryReader
-from langchain_community.embeddings import HuggingFaceEmbeddings
 from llama_index.core import Settings
 from llama_index.core import StorageContext, load_index_from_storage
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core.node_parser import CodeSplitter, SentenceSplitter
-import uuid
-import fnmatch
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from functools import partial
-import multiprocessing
-import concurrent.futures
-from concurrent.futures import ThreadPoolExecutor, as_completed, ProcessPoolExecutor
-from collections import deque
-import queue
-from logging.handlers import QueueHandler, QueueListener
-import sys
+
+
 
 log_queue = queue.Queue(-1)
 queue_handler = QueueHandler(log_queue)
@@ -42,7 +48,6 @@ stream_handler.setFormatter(formatter)
 listener = QueueListener(log_queue, stream_handler)
 listener.start()
 
-# Ensure output is flushed
 sys.stdout.reconfigure(line_buffering=True)
 
 # File type mappings
@@ -69,7 +74,6 @@ class SQLSplitter(TextSplitter):
         super().__init__(chunk_size=chunk_size, chunk_overlap=chunk_overlap)
 
     def split_text(self, text: str) -> list:
-        # Split by semicolons, assuming SQL statements end with ';'
         sql_statements = [stmt.strip() + ";" for stmt in text.split(";") if stmt.strip()]
         chunks = []
         current_chunk = []
@@ -86,7 +90,6 @@ class SQLSplitter(TextSplitter):
 
         return chunks
 
-# Update your file processing logic to use SQLSplitter for .sql files
 def process_single_document(doc, i, no_of_batches):
     try:
         file_path = doc.metadata.get("file_path")
@@ -139,14 +142,13 @@ def ingest():
     multiprocessing.set_start_method('spawn')
     s3 = boto3.client('s3')
 
-    # Use CodeBERT for code-specific embeddings
     embed_model = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2",
                                         model_kwargs={'device': "cpu"},
                                         encode_kwargs={"batch_size": 131072})
     Settings.embed_model = embed_model
     Settings.llm = None
 
-    reader = SimpleDirectoryReader(input_dir="/home/ec2-user/internProject/app/padb", recursive=True)
+    reader = SimpleDirectoryReader(input_dir=os.environ['WORKSPACE'], recursive=True)
     documents = reader.load_data()
     chunk_size = 25000
     total_docs = len(documents)
@@ -195,18 +197,17 @@ def ingest():
 
     logger.info(f"Finished processing with skipped: {skip_count}, and not skipped: {not_skip_count}")
 
-    # Initialize FAISS vector store using CodeBERT embeddings
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2",
                                        model_kwargs={'device': "cpu"},
                                        encode_kwargs={"batch_size": 131072})
 
-    dimension = len(embeddings.embed_query("hello world"))  # Code-specific example
+    dimension = len(embeddings.embed_query("hello world"))  
 
-    index = faiss.IndexHNSWFlat(dimension,  4096)
-    index.hnsw.efConstruction = 16384   # Set this to a higher value for more accurate indexing
+    index = faiss.IndexHNSWFlat(dimension,  1024)
+    index.hnsw.efConstruction = 8192  
 
     # Set efSearch (affects search phase)
-    index.hnsw.efSearch = 8192  # Set this based on desired search quality (higher = more accurate)
+    index.hnsw.efSearch = 4096  
 
     vector_store = FAISS(
         embedding_function=embeddings,
@@ -217,10 +218,10 @@ def ingest():
 
     total_nodes = len(nodes)
     for i, node in enumerate(nodes):
-        with open("snippets.txt", "a") as f:
-            f.write(f"{node['text']} \n")
-            f.write(f"{node['metadata']} \n")
-            f.write(f"{i} \n")
+        #with open("snippets.txt", "a") as f:
+            #f.write(f"{node['text']} \n")
+            #f.write(f"{node['metadata']} \n")
+            #f.write(f"{i} \n")
 
         vector_store.add_texts(
             texts=[node["text"]],
@@ -232,7 +233,7 @@ def ingest():
 
     end_time = time.time()
     logger.info(f"Time taken to add all texts: {end_time - start_time} seconds")
-    vector_store.save_local("/home/ec2-user/internProject/app/faiss_index_final_improved_4")
+    vector_store.save_local(os.path.join(os.environ['WORKSPACE'], "faiss_index_final_improved_4"))
 
 if __name__ == "__main__":
     try:

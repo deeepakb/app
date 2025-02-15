@@ -87,7 +87,6 @@ pre[class*="language-"] {
 }
 
 
-/* Add to your existing CSS */
 .file-analysis {
     margin-top: 10px;
     padding: 10px;
@@ -132,7 +131,6 @@ code[class*="language-cpp"] {
     line-height: 1.5;
 }
 
-/* Add specific C++ token coloring if needed */
 .token.keyword {
     color: #ff79c6;
 }
@@ -224,7 +222,6 @@ code[class*="language-cpp"] {
             color: white;
         }
 
-       /* Update chat container to remove top padding */
 #chat-container {
     position: fixed;
     left: 200px;
@@ -253,12 +250,12 @@ code[class*="language-cpp"] {
 .feedback-option {
     background-color: #444;
     color: #e5e5e5;
-    padding: 4px 8px;  /* Smaller padding */
+    padding: 4px 8px;  
     border-radius: 4px;
     cursor: pointer;
-    font-size: 0.8rem;  /* Smaller font */
+    font-size: 0.8rem;  
     transition: background-color 0.2s ease;
-    white-space: nowrap;  /* Prevent option text from wrapping */
+    white-space: nowrap; 
 }
 
 
@@ -274,18 +271,18 @@ code[class*="language-cpp"] {
 .feedback-option.disabled {
     opacity: 0.3;
     cursor: not-allowed;
-    pointer-events: none;  /* This prevents hover effects */
-    background-color: #444 !important;  /* Prevent hover color change */
+    pointer-events: none; 
+    background-color: #444 !important; 
 }
     
 #messages {
     flex-grow: 1;
     overflow-y: auto;
-    border: none; /* Remove the white border */
+    border: none; 
     border-radius: 8px;
     padding: 15px;
     margin-bottom: 20px;
-    background: transparent; /* Remove background */
+    background: transparent; 
     display: flex;
     flex-direction: column;
 }
@@ -314,7 +311,7 @@ code[class*="language-cpp"] {
     flex-direction: column;
     padding: 12px;
     position: relative;
-    gap: 0;  /* Remove the gap */
+    gap: 0; 
 }
 
 
@@ -408,7 +405,7 @@ code[class*="language-cpp"] {
     border-radius: 8px;
     background: transparent;
     color: #e5e5e5;
-    margin-bottom: 0; /* Remove bottom margin */
+    margin-bottom: 0;
 }
 
 
@@ -458,7 +455,7 @@ code[class*="language-cpp"] {
     color: #4a90e2;
     font-size: 1.5rem;
     font-weight: bold;
-    margin-bottom: 10px; /* Reduced from 30px */
+    margin-bottom: 10px; 
     text-align: center;
     font-family: 'Amazon Ember', sans-serif;
     position: relative;
@@ -494,7 +491,6 @@ code[class*="language-cpp"] {
     50% { opacity: 1; }
 }
  
-       /* Update code review container to remove top padding */
 #code-review-container {
     position: fixed;
     left: 200px;
@@ -517,12 +513,9 @@ code[class*="language-cpp"] {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: calc(100vh - 160px); /* Adjust for header and padding */
+    min-height: calc(100vh - 160px);
     width: 100%;
 }
-
-
-
 
 .file-list {
     width: 100%;
@@ -557,8 +550,8 @@ code[class*="language-cpp"] {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-top: 8px;  /* Add small space between message and feedback */
-    align-self: flex-start;  /* Align to the left */
+    margin-top: 8px; 
+    align-self: flex-start;  
 }
 
 .quip-link-container {
@@ -619,7 +612,7 @@ code[class*="language-cpp"] {
 }
 
 .feedback-icon.selected {
-    filter: invert(1); /* This will make the entire icon white, including the inside */
+    filter: invert(1);
     opacity: 1;
 }
 
@@ -698,7 +691,7 @@ code[class*="language-cpp"] {
     100% { transform: rotate(360deg); }
 }
 .nav-items {
-    margin-top: 20px;  /* Add space between logo and nav items */
+    margin-top: 20px; 
     margin-bottom: 20px;
 }
 
@@ -785,7 +778,7 @@ code[class*="language-cpp"] {
 }
 
 .message-content {
-    margin-bottom: 8px;  /* Add space between content and feedback */
+    margin-bottom: 8px;  
 }
 
 
@@ -936,7 +929,6 @@ code[class*="language-cpp"] {
     if (percentageElement) {
         percentageElement.textContent = percentage;
         
-        // Update color based on usage
         const color = percentage > 90 ? '#f44336' : 
                      percentage > 70 ? '#ff9800' : 
                      '#4a90e2';
@@ -1022,7 +1014,7 @@ code[class*="language-cpp"] {
     
                 let userQuery = userInput.value.trim();
                 if (userQuery === '') return;
-                removeStartMessage();  // Add this line
+                removeStartMessage();  
 
                 userQuery = capitalizeFirstLetter(userQuery);
     
@@ -1087,7 +1079,6 @@ botMessage.innerHTML = `
 const feedbackIcons = botMessage.querySelectorAll('.feedback-icon');
 const feedbackOptions = botMessage.querySelector('.feedback-options');
 
-// Store the user and bot messages for feedback
 const userMessageText = userQuery;
 const botMessageText = data.response;
 
@@ -1103,7 +1094,7 @@ feedbackIcons.forEach(icon => {
         } else {
             feedbackOptions.style.display = 'none';
             feedbackIcons.forEach(i => i.classList.add('disabled'));
-            // Submit positive feedback immediately
+            
             submitFeedback('positive', userMessageText, botMessageText);
         }
     });
