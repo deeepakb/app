@@ -51,7 +51,7 @@ listener.start()
 sys.stdout.reconfigure(line_buffering=True)
 
 # File type mappings
-file_type_to_language = {
+FILE_TYPE_TO_LANGUAGE = {
     ".cpp": "cpp", ".hpp": "cpp", ".go": "go", ".sql": "text", ".java": "java",
     ".json": "json", ".kt": "kotlin", ".ts": "ts", ".php": "php", ".py": "python",
     ".rst": "rst", ".sh": "text", ".rb": "ruby", ".xml": "text",
@@ -66,8 +66,6 @@ file_type_to_language = {
 
 def file_size_is_within_limit(file_path, max_size=12 * 1024 * 1024):
     return os.path.getsize(file_path) <= max_size
-
-from langchain.text_splitter import TextSplitter
 
 class SQLSplitter(TextSplitter):
     def __init__(self, chunk_size=2048, chunk_overlap=100):
@@ -96,12 +94,10 @@ def process_single_document(doc, i, no_of_batches):
         file_name = os.path.basename(file_path)
         logger.info(f"Processing File: {file_path}")
         _, file_type = os.path.splitext(file_name)
-        file_type = file_type_to_language.get(file_type.lower(), None)
+        file_type = FILE_TYPE_TO_LANGUAGE.get(file_type.lower())
 
         if not file_size_is_within_limit(file_path):
             logger.warning(f"Skipping large file: {file_path}")
-            #with open("/home/deeepakb/Projects/bedrockTest/text/log.txt", "a") as f:
-                #f.write(f"Skipping large file: {file_path}\n")
             return []
 
         if file_type == "sql":
@@ -114,15 +110,10 @@ def process_single_document(doc, i, no_of_batches):
         elif file_type is not None:
             text_splitter = RecursiveCharacterTextSplitter(chunk_size=2048, chunk_overlap=100)
         else:
-            #with open("/home/deeepakb/Projects/bedrockTest/text/log.txt", "a") as f:
-                #f.write(f"Skipping Unknown file: {file_path}\n")
             return []
 
         content = doc.get_content()
         chunks = text_splitter.split_text(content)
-        
-        #with open("/home/deeepakb/Projects/bedrockTest/text/log.txt", "a") as f:
-            #f.write(f"File Exists: {file_path}")
 
         return [
             {
@@ -172,8 +163,6 @@ def ingest():
                     if result:
                         not_skip_count += 1
                         nodes.extend(result)
-                        #with open("/home/deeepakb/Projects/bedrockTest/text/log.txt", "a") as f:
-                            #f.write(f"Finished: {doc.metadata.get('file_path')}\n")
                     else:
                         skip_count += 1
                     processed_docs += 1
@@ -181,8 +170,6 @@ def ingest():
                 except concurrent.futures.TimeoutError:
                     logger.warning(f"Timeout error processing file: {doc.metadata.get('file_path')}")
                     skip_count += 1
-                    #with open("/home/deeepakb/Projects/bedrockTest/text/log.txt", "w") as f:
-                        #f.write(f"Timeout error processing file: {doc.metadata.get('file_path')}\n")
                     future.cancel()
                 except Exception as e:
                     logger.error(f"Error processing file: {doc.metadata.get('file_path')}")
@@ -191,7 +178,6 @@ def ingest():
 
                 logger.info(f"Processed {processed_docs} of {total_docs} documents")
 
-        gc.collect()
         time.sleep(0.5)
         batch_count += 1
 
@@ -218,11 +204,6 @@ def ingest():
 
     total_nodes = len(nodes)
     for i, node in enumerate(nodes):
-        #with open("snippets.txt", "a") as f:
-            #f.write(f"{node['text']} \n")
-            #f.write(f"{node['metadata']} \n")
-            #f.write(f"{i} \n")
-
         vector_store.add_texts(
             texts=[node["text"]],
             metadatas=[node["metadata"]],

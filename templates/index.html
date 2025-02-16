@@ -5,18 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='/favicon/favicon.png') }}">
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.css" rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-clike.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-cpp.min.js"></script>
-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <link href="{{ url_for('static', filename='css/prism-tomorrow.min.css') }}" rel="stylesheet" />
+    <link href="{{ url_for('static', filename='css/prism-line-numbers.min.css') }}" rel="stylesheet" />
+    <script src="{{ url_for('static', filename='js/prism.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/prism-line-numbers.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/prism-python.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/prism-sql.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/prism-javascript.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/prism-bash.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/prism-clike.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/prism-java.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/prism-cpp.min.js') }}"></script>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
     <title>Chatbot Interface</title>
@@ -829,7 +829,7 @@ code[class*="language-cpp"] {
             </div>
         </div>
         <div class="quip-link-container">
-            <a href="https://quip-amazon.com/llcDAX6iABjk/Project-Feedback" target="_blank" class="quip-link">
+            <a href="https://quip-amazon.com/llcDAX6iABjk/Project-Feedback" target="_blank" rel="noopener noreferrer" class="quip-link">
                 Feedback Form
             </a>
         </div>
@@ -854,7 +854,7 @@ code[class*="language-cpp"] {
                     Conversation Limit: <span id="token-percentage">0</span>%
                 </div>
                 This application uses generative AI. You may need to verify responses for accuracy. 
-                <a href="https://aws.amazon.com/ai/responsible-ai/policy/" target="_blank" class="policy-link">AWS Responsible AI Policy</a>
+                <a href="https://aws.amazon.com/ai/responsible-ai/policy/" target="_blank" rel="noopener noreferrer" class="policy-link">AWS Responsible AI Policy</a>
             </div>
         </div>
 
@@ -880,7 +880,7 @@ code[class*="language-cpp"] {
     </div>
     <div class="disclaimer">
         This application uses generative AI. You may need to verify responses for accuracy. 
-        <a href="https://aws.amazon.com/ai/responsible-ai/policy/" target="_blank" class="policy-link">AWS Responsible AI Policy</a>
+        <a href="https://aws.amazon.com/ai/responsible-ai/policy/" target="_blank" rel="noopener noreferrer" class="policy-link">AWS Responsible AI Policy</a>
     </div>
 </div>
 
