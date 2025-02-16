@@ -33,8 +33,6 @@ from llama_index.core import StorageContext, load_index_from_storage
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.core.node_parser import CodeSplitter, SentenceSplitter
 
-
-
 log_queue = queue.Queue(-1)
 queue_handler = QueueHandler(log_queue)
 logger = logging.getLogger()
